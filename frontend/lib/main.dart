@@ -75,20 +75,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // العبارة التوضيحية أعلى الشاشة
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.green, width: 1.2),
-              ),
-              child: const Text(
-                'اشترك بالدولار لفرصة الفوز ما عدا المليون دولار، وكلما كان اشتراكك أكثر كلما زادت فرص الفوز أكثر!',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
-                textAlign: TextAlign.center,
+            // العبارة التوضيحية أعلى الشاشة (مرفوعة للأعلى)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.green, width: 1.2),
+                ),
+                child: const Text(
+                  'فرصتك للربح وكن سببًا في مساعدة المحتاجين',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 17),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
             TextField(
