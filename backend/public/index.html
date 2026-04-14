@@ -511,17 +511,12 @@
     <p style="text-align:center;font-size:1.15rem;color:#FFA500;margin-bottom:18px;margin-top:4px;">Mosabaqat Alomr - Rewards & Competition Platform</p>
     <!-- Landing Page -->
     <div id="landingPage" class="landing-page">
-        <!-- عبارة خيرية مثبتة أعلى الصفحة وتظهر فقط في الصفحة الرئيسية -->
-        <div id="charityBanner" class="charity-banner">
+        <!-- عبارة خيرية مثبتة داخل الصفحة الرئيسية فقط وتحت العنوان مباشرة -->
+        <div id="charityBanner" class="charity-banner" style="position:static;transform:none;max-width:600px;margin:18px auto 0 auto;left:auto;top:auto;">
             فرصتك للربح… وكن سببًا في مساعدة المحتاجين — <span style="color:#FFA500;font-weight:700;">جزء من كل مشاركة يذهب للأعمال الخيرية.</span>
         </div>
             <style>
             .charity-banner {
-                position: fixed;
-                top: 18px;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 2000;
                 background: rgba(255,215,0,0.13);
                 border-radius: 18px;
                 padding: 16px 22px;
@@ -532,25 +527,22 @@
                 line-height: 1.7;
                 backdrop-filter: blur(2px);
                 border: 1.5px solid #FFD700;
-                max-width: 90vw;
+                max-width: 600px;
                 text-align: center;
                 direction: rtl;
-                transition: top 0.3s;
+                margin-bottom: 18px;
             }
             @media (max-width: 768px) {
                 .charity-banner {
                     font-size: 1rem;
                     padding: 10px 8px;
                     max-width: 98vw;
-                    left: 50%;
-                    top: 8px;
                 }
             }
             @media (max-width: 480px) {
                 .charity-banner {
                     font-size: 0.92rem;
                     padding: 7px 2vw;
-                    top: 4px;
                 }
             }
             </style>
