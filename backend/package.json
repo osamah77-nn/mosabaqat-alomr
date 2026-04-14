@@ -1,0 +1,21 @@
+{
+  "name": "mosabaqat-alomr-backend",
+  "version": "1.0.0",
+  "description": "Backend server for Mosabaqat Alomr application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "backend"
+  ],
+  "author": "",
+  "license": "ISC"
+}
