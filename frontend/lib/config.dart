@@ -1,4 +1,5 @@
 // Configuration file for API endpoints
 class Config {
-  static const String baseUrl = 'http://localhost:5000';
+  // ضع هنا رابط الـ Backend النهائي بعد النشر على Render
+  static const String baseUrl = 'https://your-backend.onrender.com';
 }

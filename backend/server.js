@@ -5,92 +5,114 @@ const bcrypt = require('bcrypt');
 
 // تعريف التطبيق مباشرة بعد الاستيراد
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+// السماح فقط لدومين Vercel (يمكنك تعديله لاحقاً)
+const allowedOrigins = [process.env.FRONTEND_ORIGIN || 'https://your-vercel-app.vercel.app'];
+app.use(cors({
+    origin: function (origin, callback) {
+        // السماح بدون Origin (مثل Postman)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            return callback(null, true);
+        } else {
+            return callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
 // ...existing code...
 
 // تخزين مؤقت للأخبار
-let newsList = [];
+// ربط MongoDB
+const { MongoClient, ObjectId } = require('mongodb');
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const DB_NAME = 'mosabaqat_alomr';
+let db, newsCollection, participantsCollection, winnerCollection;
 
-// تخزين مؤقت لبيانات الفائز الحالي
-let winnerData = null;
-
-// تخزين مؤقت للمشاركين
-// كل مستخدم: { username, email, passwordHash, registrationNumber, role }
-let participants = [];
+async function connectDB() {
+    const client = new MongoClient(MONGODB_URI, { useUnifiedTopology: true });
+    await client.connect();
+    db = client.db(DB_NAME);
+    newsCollection = db.collection('news');
+    participantsCollection = db.collection('participants');
+    winnerCollection = db.collection('winner');
+    console.log('Connected to MongoDB');
+}
+connectDB().catch(console.error);
 
 // بيانات المطور (admin) الثابتة
 const ADMIN_EMAIL = "developer@mosabaqa.com";
 
 // جميع المسارات (routes)
 // إضافة خبر جديد (POST /news)
-app.post('/news', (req, res) => {
+app.post('/news', async (req, res) => {
     const { title, content } = req.body;
     if (!title || !content) {
         return res.status(400).json({ message: 'العنوان والمحتوى مطلوبان' });
     }
     const newsItem = {
-        id: Date.now(),
         title,
         content,
         date: new Date().toISOString()
     };
-    newsList.unshift(newsItem); // أحدث خبر أولاً
-    res.status(201).json(newsItem);
+    const result = await newsCollection.insertOne(newsItem);
+    res.status(201).json({ ...newsItem, id: result.insertedId });
 });
 
 
 // جلب جميع الأخبار (GET /news)
-app.get('/news', (req, res) => {
-    res.json(newsList);
+app.get('/news', async (req, res) => {
+    const news = await newsCollection.find().sort({ date: -1 }).toArray();
+    res.json(news.map(n => ({ ...n, id: n._id })));
 });
 
 // حذف خبر (DELETE /news/:id)
-app.delete('/news/:id', (req, res) => {
+app.delete('/news/:id', async (req, res) => {
     const id = req.params.id;
-    const before = newsList.length;
-    newsList = newsList.filter(item => String(item.id) !== String(id));
-    if (newsList.length === before) {
+    const result = await newsCollection.deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
         return res.status(404).json({ message: 'الخبر غير موجود' });
     }
     res.json({ message: 'تم حذف الخبر بنجاح' });
 });
 
 // إضافة أو تحديث بيانات الفائز (POST /winner)
-app.post('/winner', (req, res) => {
+app.post('/winner', async (req, res) => {
     const { name, number, amount } = req.body;
     if (!name || !number || !amount) {
         return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
     }
-    winnerData = {
-        id: Date.now(),
+    const winner = {
         name,
         number,
         amount,
         date: new Date().toISOString()
     };
-    res.status(201).json(winnerData);
+    await winnerCollection.deleteMany({}); // winner واحد فقط
+    const result = await winnerCollection.insertOne(winner);
+    res.status(201).json({ ...winner, id: result.insertedId });
 });
 
 // جلب بيانات الفائز الحالية (GET /winner)
-app.get('/winner', (req, res) => {
-    if (!winnerData) return res.json(null);
-    res.json(winnerData);
+app.get('/winner', async (req, res) => {
+    const winner = await winnerCollection.findOne();
+    res.json(winner ? { ...winner, id: winner._id } : null);
 });
 
 // حذف بيانات الفائز (DELETE /winner)
-app.delete('/winner', (req, res) => {
-    winnerData = null;
+app.delete('/winner', async (req, res) => {
+    await winnerCollection.deleteMany({});
     res.json({ message: 'تم حذف رسالة الفائز' });
 });
 
 // نقطة إرجاع جميع المشاركين (للمطور)
-app.get('/participants', (req, res) => {
-    res.json(participants);
+app.get('/participants', async (req, res) => {
+    const participants = await participantsCollection.find().toArray();
+    res.json(participants.map(p => ({ ...p, id: p._id })));
 });
 
 
@@ -100,7 +122,7 @@ app.post('/login', async (req, res) => {
     if (!email || !password) {
         return res.status(400).json({ message: 'يرجى إدخال البريد وكلمة المرور' });
     }
-    const user = participants.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+    const user = await participantsCollection.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
     if (!user) {
         return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
     }
@@ -108,9 +130,7 @@ app.post('/login', async (req, res) => {
     if (!match) {
         return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
     }
-    // تحديد الدور بناءً على الإيميل
     const role = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
-    // إرسال توكن بسيط (يمكنك لاحقاً استبداله بـ JWT)
     return res.json({ token: "user-token", username: user.username, role });
 });
 
@@ -124,18 +144,19 @@ app.post('/register', async (req, res) => {
     if (!username || !email || !password) {
         return res.status(400).send({ message: 'يرجى تعبئة جميع الحقول' });
     }
-    if (participants.find(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+    const exists = await participantsCollection.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    if (exists) {
         return res.status(400).send({ message: 'البريد الإلكتروني مستخدم بالفعل' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const registrationNumber = Math.floor(100000 + Math.random() * 900000);
     const role = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
     const newParticipant = { username, email, passwordHash, registrationNumber, role };
-    participants.push(newParticipant);
+    await participantsCollection.insertOne(newParticipant);
     res.status(201).json({ username, email, registrationNumber, role });
 });
 
 // تشغيل السيرفر في النهاية
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
