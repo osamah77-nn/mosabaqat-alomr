@@ -681,7 +681,7 @@
             </div>
         </div>
         <div id="paymentSection" style="text-align:center; margin-top:18px; display:none; flex-direction:column; align-items:center;">
-            <button class="app-btn" style="margin-bottom:12px;" onclick="openPaymentPage()">الدفع (USDT)</button>
+            <button class="app-btn" style="margin-bottom:12px;" onclick="payWithBinance()">الدفع (USDT)</button>
         </div>
         <div style="text-align:center; margin-top:10px;">
             <button class="app-btn" onclick="closeBuyScreen()">رجوع</button>
@@ -699,17 +699,28 @@
         </div>
     </div>
     <script>
-    // --- منطق الدفع الجديد ---
-    function openPaymentPage() {
-        document.getElementById('buyScreen').style.display = 'none';
-        document.getElementById('paymentPage').style.display = 'flex';
-    }
-    function backToBuyScreen() {
-        document.getElementById('paymentPage').style.display = 'none';
-        document.getElementById('buyScreen').style.display = 'flex';
-    }
-    function goToBinance() {
-        window.open('https://www.binance.com/', '_blank');
+    // --- ربط زر الدفع الحقيقي بمنظومة Binance Pay عبر backend ---
+    async function payWithBinance() {
+        var amount = document.getElementById('usdtAmount').value;
+        if (!amount || isNaN(amount) || Number(amount) < 1) {
+            alert('يرجى إدخال مبلغ صحيح');
+            return;
+        }
+        try {
+            const res = await fetch('/create-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: Number(amount) })
+            });
+            const data = await res.json();
+            if (res.ok && data.payment_url) {
+                window.open(data.payment_url, '_blank');
+            } else {
+                alert('تعذر إنشاء رابط الدفع: ' + (data.error || 'خطأ غير معروف'));
+            }
+        } catch (e) {
+            alert('حدث خطأ أثناء الاتصال بخادم الدفع.');
+        }
     }
     // --- prize address logic ---
     function getPrizeAddressKey() {

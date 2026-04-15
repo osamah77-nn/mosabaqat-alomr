@@ -1,8 +1,10 @@
 // استيراد المكتبات في الأعلى
 const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
-
+require('dotenv').config();
+const { createBinancePayOrder } = require('./binancePay');
 // تعريف التطبيق مباشرة بعد الاستيراد
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +27,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('public'));
 // ...existing code...
+// Endpoint: POST /create-payment
+app.post('/create-payment', async (req, res) => {
+    try {
+        const { amount } = req.body;
+        if (!amount || isNaN(amount) || amount <= 0) {
+            return res.status(400).json({ error: 'Invalid amount' });
+        }
+        const paymentUrl = await createBinancePayOrder(amount);
+        res.json({ payment_url: paymentUrl });
+    } catch (err) {
+        res.status(500).json({ error: err.message || 'Payment creation failed' });
+    }
+});
 
 // تخزين مؤقت للأخبار
 // ربط MongoDB
