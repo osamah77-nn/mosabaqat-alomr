@@ -25,7 +25,10 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
-app.use(express.static('public'));
+const fs = require('fs');
+if (fs.existsSync('public')) {
+    app.use(express.static('public'));
+}
 // ...existing code...
 // Endpoint: POST /create-payment
 app.post('/create-payment', async (req, res) => {
