@@ -1,18 +1,26 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <title>مسابقة العمر | Mosabaqat Alomr</title>
-    <meta name="description" content="مسابقة العمر - منصة جوائز وربح إلكتروني | Mosabaqat Alomr - Rewards & Competition Platform">
+    <meta name="description"
+        content="مسابقة العمر - منصة جوائز وربح إلكتروني | Mosabaqat Alomr - Rewards & Competition Platform">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        img, picture, video, canvas, svg {
+
+        img,
+        picture,
+        video,
+        canvas,
+        svg {
             max-width: 100%;
             height: auto;
             display: block;
@@ -111,7 +119,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s;
         }
 
@@ -122,25 +130,25 @@
         .btn-primary {
             background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
             color: #1a1a1a;
-            box-shadow: 0 10px 30px rgba(255,215,0,0.3);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(255,215,0,0.4);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.4);
         }
 
         .btn-secondary {
             background: rgba(255, 255, 255, 0.1);
             color: #ffffff;
-            border: 2px solid rgba(255,215,0,0.5);
+            border: 2px solid rgba(255, 215, 0, 0.5);
             backdrop-filter: blur(10px);
         }
 
         .btn-secondary:hover {
-            background: rgba(255,215,0,0.2);
+            background: rgba(255, 215, 0, 0.2);
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(255,215,0,0.2);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.2);
         }
 
         /* Main App */
@@ -168,12 +176,14 @@
             background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(20px);
             border-radius: 30px;
-            padding: 42px 28px; /* 30% أقل */
+            padding: 42px 28px;
+            /* 30% أقل */
             margin-bottom: 35px;
             text-align: center;
-            box-shadow: 0 21px 42px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,215,0,0.3);
-            max-width: 560px; /* 30% أقل */
+            box-shadow: 0 21px 42px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            max-width: 560px;
+            /* 30% أقل */
             margin-left: auto;
             margin-right: auto;
             position: relative;
@@ -186,7 +196,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(45deg, rgba(255,215,0,0.1) 0%, rgba(255,165,0,0.1) 100%);
+            background: linear-gradient(45deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%);
             border-radius: 30px;
             z-index: -1;
         }
@@ -194,7 +204,8 @@
         .app-header h2 {
             color: #ffffff;
             margin: 0 0 14px 0;
-            font-size: 2.1rem; /* 30% أقل */
+            font-size: 2.1rem;
+            /* 30% أقل */
             font-weight: 700;
             background: linear-gradient(45deg, #FFD700, #FFA500);
             -webkit-background-clip: text;
@@ -206,23 +217,23 @@
             color: #FFD700;
             font-size: 1.3rem;
             font-weight: 400;
-                margin-bottom: 15px;
-            }
+            margin-bottom: 15px;
+        }
 
-            .ticket-info {
-                color: #ffffff;
-                font-size: 1.1rem;
-                font-weight: 500;
-                margin-bottom: 25px;
-                padding: 15px 20px;
-                border-radius: 20px;
-                background: rgba(255, 255, 255, 0.08);
-                border: 1px solid rgba(255,215,0,0.15);
+        .ticket-info {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.15);
         }
 
         .app-options-btn:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(255,215,0,0.4);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.4);
         }
 
         .app-content {
@@ -230,7 +241,8 @@
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 40px;
             max-width: 1200px;
-            margin: 60px auto 0 auto; /* أضف هامش علوي 60px */
+            margin: 60px auto 0 auto;
+            /* أضف هامش علوي 60px */
         }
 
         .app-card {
@@ -238,10 +250,10 @@
             backdrop-filter: blur(20px);
             padding: 40px;
             border-radius: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             text-align: center;
             transition: all 0.3s ease;
-            border: 1px solid rgba(255,215,0,0.2);
+            border: 1px solid rgba(255, 215, 0, 0.2);
             position: relative;
             overflow: hidden;
         }
@@ -253,7 +265,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
             transition: left 0.5s;
         }
 
@@ -263,8 +275,8 @@
 
         .app-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
-            border-color: rgba(255,215,0,0.5);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 215, 0, 0.5);
         }
 
         .app-card h3 {
@@ -294,12 +306,12 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 8px 25px rgba(255,215,0,0.3);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
         }
 
         .app-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(255,215,0,0.4);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
         }
 
         /* Modal Styles */
@@ -312,7 +324,7 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.8);
+            background-color: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             padding-top: 60px;
         }
@@ -322,11 +334,11 @@
             backdrop-filter: blur(20px);
             margin: 5% auto;
             padding: 40px;
-            border: 1px solid rgba(255,215,0,0.3);
+            border: 1px solid rgba(255, 215, 0, 0.3);
             width: 90%;
             max-width: 450px;
             border-radius: 25px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
         }
 
         .close {
@@ -363,9 +375,9 @@
         .form-group input {
             width: 100%;
             padding: 15px;
-            border: 2px solid rgba(255,215,0,0.3);
+            border: 2px solid rgba(255, 215, 0, 0.3);
             border-radius: 15px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: #ffffff;
             font-size: 1rem;
             transition: border-color 0.3s ease;
@@ -374,7 +386,7 @@
         .form-group input:focus {
             outline: none;
             border-color: #FFD700;
-            box-shadow: 0 0 10px rgba(255,215,0,0.3);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
         }
 
         .submit-btn {
@@ -390,12 +402,12 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 10px 30px rgba(255,215,0,0.3);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
         }
 
         .submit-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(255,215,0,0.4);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.4);
         }
 
         /* Responsive Design */
@@ -412,6 +424,7 @@
                 grid-template-columns: 1fr;
                 gap: 18px;
             }
+
             .main-app {
                 padding: 30px 6vw;
             }
@@ -421,14 +434,17 @@
             h1 {
                 font-size: 2.1rem !important;
             }
+
             .hero-subtitle {
                 font-size: 1.1rem !important;
             }
+
             .btn {
                 padding: 14px 18px !important;
                 font-size: 1rem !important;
                 min-width: 160px !important;
             }
+
             .hero-buttons {
                 position: static;
                 transform: none;
@@ -437,29 +453,36 @@
                 margin-top: 32px;
                 margin-bottom: 16px;
             }
+
             .main-app {
                 padding: 18px 2vw;
             }
+
             .app-header {
                 padding: 28px 10px !important;
                 max-width: 98vw;
             }
+
             .app-header h2 {
                 font-size: 1.4rem !important;
             }
+
             .app-content {
                 grid-template-columns: 1fr;
                 gap: 14px;
                 margin: 24px auto 0 auto;
             }
+
             .app-card {
                 padding: 16px !important;
                 min-width: 0;
             }
+
             .modal-content {
                 padding: 16px !important;
                 max-width: 98vw;
             }
+
             #newsBox {
                 max-width: 100vw !important;
                 width: 100% !important;
@@ -468,7 +491,8 @@
                 margin: 18px 0 !important;
                 padding: 12px 8px !important;
             }
-            .main-app > div[style*="flex-direction: row"] {
+
+            .main-app>div[style*="flex-direction: row"] {
                 flex-direction: column !important;
                 gap: 12px !important;
                 align-items: stretch !important;
@@ -479,26 +503,33 @@
             h1 {
                 font-size: 1.4rem !important;
             }
+
             .hero-subtitle {
                 font-size: 0.95rem !important;
             }
+
             .btn {
                 padding: 10px 8px !important;
                 font-size: 0.95rem !important;
                 min-width: 120px !important;
             }
+
             .app-header {
                 padding: 12px 2vw !important;
             }
+
             .app-header h2 {
                 font-size: 1.1rem !important;
             }
+
             .app-card {
                 padding: 8px !important;
             }
+
             .app-card h3 {
                 font-size: 1.1rem !important;
             }
+
             #newsBox {
                 font-size: 1rem !important;
                 padding: 8px 4px !important;
@@ -506,16 +537,20 @@
         }
     </style>
 </head>
+
 <body>
-    <h1 style="text-align:center;font-size:2.5rem;font-weight:900;color:#FFD700;margin-top:18px;margin-bottom:0;letter-spacing:1px;">مسابقة العمر</h1>
-    <p style="text-align:center;font-size:1.15rem;color:#FFA500;margin-bottom:18px;margin-top:4px;">Mosabaqat Alomr - Rewards & Competition Platform</p>
+    <h1
+        style="text-align:center;font-size:2.5rem;font-weight:900;color:#FFD700;margin-top:18px;margin-bottom:0;letter-spacing:1px;">
+        مسابقة العمر</h1>
+    <p style="text-align:center;font-size:1.15rem;color:#FFA500;margin-bottom:18px;margin-top:4px;">Mosabaqat Alomr -
+        Rewards & Competition Platform</p>
     <!-- Landing Page -->
     <div id="landingPage" class="landing-page">
         <!-- عبارة خيرية مثبتة داخل الصفحة الرئيسية فقط وتحت العنوان مباشرة -->
-        
-            <style>
+
+        <style>
             .charity-banner {
-                background: rgba(255,215,0,0.13);
+                background: rgba(255, 215, 0, 0.13);
                 border-radius: 18px;
                 padding: 16px 22px;
                 color: #FFD700;
@@ -531,6 +566,7 @@
                 margin-top: 28px;
                 margin-bottom: 10px;
             }
+
             @media (max-width: 768px) {
                 .charity-banner {
                     font-size: 1rem;
@@ -538,14 +574,15 @@
                     max-width: 98vw;
                 }
             }
+
             @media (max-width: 480px) {
                 .charity-banner {
                     font-size: 0.92rem;
                     padding: 7px 2vw;
                 }
             }
-            </style>
-            <script>
+        </style>
+        <script>
             // إظهار/إخفاء عبارة الخير حسب الصفحة
             function updateCharityBannerVisibility() {
                 var banner = document.getElementById('charityBanner');
@@ -560,22 +597,22 @@
             }
             // راقب تغييرات الصفحات
             const origShowBuyScreen2 = window.showBuyScreen;
-            window.showBuyScreen = function() {
+            window.showBuyScreen = function () {
                 if (origShowBuyScreen2) origShowBuyScreen2.apply(this, arguments);
                 updateCharityBannerVisibility();
             }
             const origShowTicketsScreen2 = window.showTicketsScreen;
-            window.showTicketsScreen = function() {
+            window.showTicketsScreen = function () {
                 if (origShowTicketsScreen2) origShowTicketsScreen2.apply(this, arguments);
                 updateCharityBannerVisibility();
             }
             const origCloseBuyScreen2 = window.closeBuyScreen;
-            window.closeBuyScreen = function() {
+            window.closeBuyScreen = function () {
                 if (origCloseBuyScreen2) origCloseBuyScreen2.apply(this, arguments);
                 updateCharityBannerVisibility();
             }
             const origCloseTicketsScreen2 = window.closeTicketsScreen;
-            window.closeTicketsScreen = function() {
+            window.closeTicketsScreen = function () {
                 if (origCloseTicketsScreen2) origCloseTicketsScreen2.apply(this, arguments);
                 updateCharityBannerVisibility();
             }
@@ -596,10 +633,10 @@
                 updateCharityBannerVisibility();
             }
             // عند التنقل بين الشاشات يدويًا
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 updateCharityBannerVisibility();
             });
-            </script>
+        </script>
         <div class="hero">
             <div style="width:100%;text-align:center;">
                 <div style="color:#FFD700;font-size:1.25rem;font-weight:700;margin-bottom:18px;line-height:1.6;">
@@ -607,8 +644,10 @@
                 </div>
             </div>
             <div id="subscribersCounterBox" style="margin-bottom: 40px;">
-                <div style="font-size: 1.3rem; color: #FFD700; font-weight: 600; margin-bottom: 8px;">عدد المشتركين</div>
-                <div id="subscribersCounter" style="font-size: 2.8rem; font-weight: bold; letter-spacing: 2px;">1,000,000</div>
+                <div style="font-size: 1.3rem; color: #FFD700; font-weight: 600; margin-bottom: 8px;">عدد المشتركين
+                </div>
+                <div id="subscribersCounter" style="font-size: 2.8rem; font-weight: bold; letter-spacing: 2px;">
+                    1,000,000</div>
             </div>
             <div class="hero-buttons">
                 <button class="btn btn-primary" onclick="openModal('registerModal')">تسجيل جديد</button>
@@ -628,7 +667,8 @@
                     <div id="userNameInfo" class="ticket-info" style="display:none"></div>
                 </div>
             </div>
-            <div id="newsBox" style="background: linear-gradient(135deg, #232526 0%, #FFD700 100%); color: #222; border-radius: 18px; min-width: 220px; max-width: 30%; width: 30%; padding: 22px 18px; box-shadow: 0 6px 24px rgba(0,0,0,0.10); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; font-size:2.5rem;">
+            <div id="newsBox"
+                style="background: linear-gradient(135deg, #232526 0%, #FFD700 100%); color: #222; border-radius: 18px; min-width: 220px; max-width: 30%; width: 30%; padding: 22px 18px; box-shadow: 0 6px 24px rgba(0,0,0,0.10); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; font-size:2.5rem;">
                 <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: #d19a00;">الأخبار</div>
                 <div id="newsContent">لا توجد أخبار حالياً.</div>
             </div>
@@ -647,10 +687,14 @@
         </div>
     </div>
     <!-- Tickets Screen خارج mainApp -->
-    <div id="ticketsScreen" class="main-app" style="display:none; flex-direction:column; align-items:center; min-height:100vh;">
-        <div style="max-width:600px; width:100%; margin:40px auto 24px auto; background:rgba(0,0,0,0.85); border-radius:22px; padding:32px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10); display:block;">
+    <div id="ticketsScreen" class="main-app"
+        style="display:none; flex-direction:column; align-items:center; min-height:100vh;">
+        <div
+            style="max-width:600px; width:100%; margin:40px auto 24px auto; background:rgba(0,0,0,0.85); border-radius:22px; padding:32px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10); display:block;">
             <h2 style="color:#FFD700; margin-bottom:24px; text-align:center;">أرقامك المشاركة في السحب</h2>
-            <div id="ticketsList" style="width:100%; text-align:center; color:#FFD700; font-size:1.15rem; line-height:2; word-break:break-all; min-height:40px;"></div>
+            <div id="ticketsList"
+                style="width:100%; text-align:center; color:#FFD700; font-size:1.15rem; line-height:2; word-break:break-all; min-height:40px;">
+            </div>
         </div>
         <div style="text-align:center; margin:24px auto 0 auto; width:100%;">
             <button class="app-btn" onclick="closeTicketsScreen()">رجوع</button>
@@ -658,29 +702,45 @@
     </div>
     </div>
     <!-- Buy Numbers Screen -->
-        <div id="buyScreen" class="main-app" style="display:none; flex-direction:column; align-items:center; justify-content:center;">
-        <div style="max-width:500px; width:100%; margin:40px auto 24px auto; background:rgba(0,0,0,0.85); border-radius:22px; padding:32px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10); display:flex; flex-direction:column; align-items:center;">
+    <div id="buyScreen" class="main-app"
+        style="display:none; flex-direction:column; align-items:center; justify-content:center;">
+        <div
+            style="max-width:500px; width:100%; margin:40px auto 24px auto; background:rgba(0,0,0,0.85); border-radius:22px; padding:32px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10); display:flex; flex-direction:column; align-items:center;">
             <h2 style="color:#FFD700; margin-bottom:24px;">شراء الأرقام والمشاركة في السحب</h2>
             <!-- مربع إدخال عنوان الاستلام أو ID -->
-            <div style="width:100%; display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; margin-bottom:18px;">
-                <label for="userPrizeAddress" style="color:#FFD700; font-size:1rem; margin-bottom:7px;">ادخل ID الخاص بك أو عنوان المحفظة الذي تريد استلام الجائزة عبره</label>
+            <div
+                style="width:100%; display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; margin-bottom:18px;">
+                <label for="userPrizeAddress" style="color:#FFD700; font-size:1rem; margin-bottom:7px;">ادخل ID الخاص بك
+                    أو عنوان المحفظة الذي تريد استلام الجائزة عبره</label>
                 <div style="display:flex; flex-direction:row; align-items:center; width:100%;">
-                    <input id="userPrizeAddress" type="text" style="flex:2; min-width:260px; max-width:100%; padding:10px; border-radius:10px; border:1px solid #FFD700; font-size:1rem; background:#111; color:#fff; margin-left:10px;" placeholder="مثال: 0x... أو معرفك فقط">
-                    <button id="savePrizeAddressBtn" class="app-btn" style="padding:10px 18px; font-size:0.95rem; margin-left:8px; min-width:unset;" onclick="savePrizeAddress()">تأكيد</button>
+                    <input id="userPrizeAddress" type="text"
+                        style="flex:2; min-width:260px; max-width:100%; padding:10px; border-radius:10px; border:1px solid #FFD700; font-size:1rem; background:#111; color:#fff; margin-left:10px;"
+                        placeholder="مثال: 0x... أو معرفك فقط">
+                    <button id="savePrizeAddressBtn" class="app-btn"
+                        style="padding:10px 18px; font-size:0.95rem; margin-left:8px; min-width:unset;"
+                        onclick="savePrizeAddress()">تأكيد</button>
                 </div>
             </div>
-            <div id="prizeAddressSavedMsg" style="color:#0c0; font-size:1rem; margin-bottom:10px; display:none; text-align:right;"></div>
-            <div style="display:flex; flex-direction:column; gap:32px; justify-content:center; align-items:center; width:100%;">
-                <div id="buyBox1" style="background:#222; border-radius:16px; padding:28px 18px; min-width:220px; min-height:120px; box-shadow:0 4px 16px rgba(255,215,0,0.08); display:flex; flex-direction:column; align-items:center;">
-                    <label for="usdtAmount" style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">قيمة الشراء (USDT)</label>
-                    <input id="usdtAmount" type="number" min="1" step="1" value="1" style="width:120px; padding:10px; border-radius:10px; border:1px solid #FFD700; font-size:1.1rem; text-align:center; margin-bottom:6px; background:#111; color:#fff;" oninput="updateBuyNumbers()" onblur="fixBuyAmount()">
+            <div id="prizeAddressSavedMsg"
+                style="color:#0c0; font-size:1rem; margin-bottom:10px; display:none; text-align:right;"></div>
+            <div
+                style="display:flex; flex-direction:column; gap:32px; justify-content:center; align-items:center; width:100%;">
+                <div id="buyBox1"
+                    style="background:#222; border-radius:16px; padding:28px 18px; min-width:220px; min-height:120px; box-shadow:0 4px 16px rgba(255,215,0,0.08); display:flex; flex-direction:column; align-items:center;">
+                    <label for="usdtAmount" style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">قيمة الشراء
+                        (USDT)</label>
+                    <input id="usdtAmount" type="number" min="1" step="1" value="1"
+                        style="width:120px; padding:10px; border-radius:10px; border:1px solid #FFD700; font-size:1.1rem; text-align:center; margin-bottom:6px; background:#111; color:#fff;"
+                        oninput="updateBuyNumbers()" onblur="fixBuyAmount()">
                 </div>
-                <div id="buyBox2" style="background:#222; border-radius:16px; padding:28px 18px; min-width:220px; min-height:120px; box-shadow:0 4px 16px rgba(255,215,0,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div id="buyBox2"
+                    style="background:#222; border-radius:16px; padding:28px 18px; min-width:220px; min-height:120px; box-shadow:0 4px 16px rgba(255,215,0,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center;">
                     <span id="numbersInfo" style="color:#FFD700; font-size:1.1rem;">سيتم منح 1 رقم</span>
                 </div>
             </div>
         </div>
-        <div id="paymentSection" style="text-align:center; margin-top:18px; display:none; flex-direction:column; align-items:center;">
+        <div id="paymentSection"
+            style="text-align:center; margin-top:18px; display:none; flex-direction:column; align-items:center;">
             <button class="app-btn" style="margin-bottom:12px;" onclick="payWithBinance()">الدفع (USDT)</button>
         </div>
         <div style="text-align:center; margin-top:10px;">
@@ -688,190 +748,195 @@
         </div>
     </div>
     <!-- صفحة الدفع -->
-    <div id="paymentPage" class="main-app" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh;">
-        <div style="max-width:420px; width:100%; margin:40px auto 24px auto; background:rgba(0,0,0,0.92); border-radius:22px; padding:38px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10); display:flex; flex-direction:column; align-items:center;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Binance_Logo.png" alt="Binance Logo" style="width:110px; margin-bottom:18px;">
+    <div id="paymentPage" class="main-app"
+        style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh;">
+        <div
+            style="max-width:420px; width:100%; margin:40px auto 24px auto; background:rgba(0,0,0,0.92); border-radius:22px; padding:38px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10); display:flex; flex-direction:column; align-items:center;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Binance_Logo.png" alt="Binance Logo"
+                style="width:110px; margin-bottom:18px;">
             <h2 style="color:#FFD700; margin-bottom:18px;">اختر وسيلة الدفع</h2>
-            <button class="app-btn" style="background:#F3BA2F; color:#222; font-weight:bold; font-size:1.15rem; padding:14px 32px; border-radius:14px; margin-bottom:18px;" onclick="goToBinance()">Binance</button>
+            <button class="app-btn"
+                style="background:#F3BA2F; color:#222; font-weight:bold; font-size:1.15rem; padding:14px 32px; border-radius:14px; margin-bottom:18px;"
+                onclick="goToBinance()">Binance</button>
             <div style="margin-top:18px;">
                 <button class="app-btn" onclick="backToBuyScreen()">رجوع</button>
             </div>
         </div>
     </div>
     <script>
-    // --- ربط زر الدفع الحقيقي بمنظومة Binance Pay عبر backend ---
-    async function payWithBinance() {
-        var amount = document.getElementById('usdtAmount').value;
-        if (!amount || isNaN(amount) || Number(amount) < 1) {
-            alert('يرجى إدخال مبلغ صحيح');
-            return;
-        }
-        try {
-            const res = await fetch('/create-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: Number(amount) })
-            });
-            const data = await res.json();
-            if (res.ok && data.payment_url) {
-                window.open(data.payment_url, '_blank');
-            } else {
-                alert('تعذر إنشاء رابط الدفع: ' + (data.error || 'خطأ غير معروف'));
+        // --- ربط زر الدفع الحقيقي بمنظومة Binance Pay عبر backend ---
+        async function payWithBinance() {
+            var amount = document.getElementById('usdtAmount').value;
+            if (!amount || isNaN(amount) || Number(amount) < 1) {
+                alert('يرجى إدخال مبلغ صحيح');
+                return;
             }
-        } catch (e) {
-            alert('حدث خطأ أثناء الاتصال بخادم الدفع.');
+            try {
+                const res = await fetch('/create-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: Number(amount) })
+                });
+                const data = await res.json();
+                if (res.ok && data.payment_url) {
+                    window.open(data.payment_url, '_blank');
+                } else {
+                    alert('تعذر إنشاء رابط الدفع: ' + (data.error || 'خطأ غير معروف'));
+                }
+            } catch (e) {
+                alert('حدث خطأ أثناء الاتصال بخادم الدفع.');
+            }
         }
-    }
-    // --- prize address logic ---
-    function getPrizeAddressKey() {
-        if (window.currentUser && window.currentUser.email) {
-            return 'prizeAddress_' + window.currentUser.email;
+        // --- prize address logic ---
+        function getPrizeAddressKey() {
+            if (window.currentUser && window.currentUser.email) {
+                return 'prizeAddress_' + window.currentUser.email;
+            }
+            return null;
         }
-        return null;
-    }
-    function savePrizeAddress() {
-        var input = document.getElementById('userPrizeAddress');
-        var val = input.value.trim();
-        var key = getPrizeAddressKey();
-        if (!key) {
-            alert('سجل الدخول أولاً');
-            return;
-        }
-        if (!val) {
-            alert('يرجى إدخال عنوان أو معرف صالح');
-            return;
-        }
-        localStorage.setItem(key, val);
-        document.getElementById('prizeAddressSavedMsg').textContent = 'تم حفظ العنوان بنجاح!';
-        document.getElementById('prizeAddressSavedMsg').style.display = 'block';
-        input.value = val;
-    }
-    function loadPrizeAddress() {
-        var input = document.getElementById('userPrizeAddress');
-        var key = getPrizeAddressKey();
-        if (key) {
-            var val = localStorage.getItem(key) || '';
+        function savePrizeAddress() {
+            var input = document.getElementById('userPrizeAddress');
+            var val = input.value.trim();
+            var key = getPrizeAddressKey();
+            if (!key) {
+                alert('سجل الدخول أولاً');
+                return;
+            }
+            if (!val) {
+                alert('يرجى إدخال عنوان أو معرف صالح');
+                return;
+            }
+            localStorage.setItem(key, val);
+            document.getElementById('prizeAddressSavedMsg').textContent = 'تم حفظ العنوان بنجاح!';
+            document.getElementById('prizeAddressSavedMsg').style.display = 'block';
             input.value = val;
         }
-    }
-    // عند فتح شاشة الشراء، عبئ الحقل
-    const origShowBuyScreen = showBuyScreen;
-    showBuyScreen = function() {
-        origShowBuyScreen.apply(this, arguments);
-        setTimeout(loadPrizeAddress, 100);
-        document.getElementById('prizeAddressSavedMsg').style.display = 'none';
-    }
-    function showBuyScreen() {
-        document.getElementById('mainApp').style.display = 'none';
-        document.getElementById('buyScreen').style.display = 'flex';
-        document.getElementById('usdtAmount').value = 1;
-        updateBuyNumbers();
-    }
-    function closeBuyScreen() {
-        document.getElementById('buyScreen').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-    }
-    function updateBuyNumbers() {
-        var val = document.getElementById('usdtAmount').value;
-        var amount = parseInt(val);
-        if (!val || isNaN(amount) || amount < 1) {
-            document.getElementById('numbersInfo').textContent = 'سيتم منح 0 رقم';
-            document.getElementById('paymentSection').style.display = 'none';
-        } else {
-            document.getElementById('numbersInfo').textContent = 'سيتم منح ' + amount + ' رقم' + (amount > 1 ? '' : '');
-            document.getElementById('paymentSection').style.display = 'flex';
+        function loadPrizeAddress() {
+            var input = document.getElementById('userPrizeAddress');
+            var key = getPrizeAddressKey();
+            if (key) {
+                var val = localStorage.getItem(key) || '';
+                input.value = val;
+            }
         }
-    }
-    function fixBuyAmount() {
-        var val = document.getElementById('usdtAmount').value;
-        var amount = parseInt(val);
-        if (!val || isNaN(amount) || amount < 1) {
+        // عند فتح شاشة الشراء، عبئ الحقل
+        const origShowBuyScreen = showBuyScreen;
+        showBuyScreen = function () {
+            origShowBuyScreen.apply(this, arguments);
+            setTimeout(loadPrizeAddress, 100);
+            document.getElementById('prizeAddressSavedMsg').style.display = 'none';
+        }
+        function showBuyScreen() {
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('buyScreen').style.display = 'flex';
             document.getElementById('usdtAmount').value = 1;
+            updateBuyNumbers();
         }
-        updateBuyNumbers();
-    }
-
-    // قاعدة بيانات الأرقام الموزعة (localStorage)
-    function getAllTickets() {
-        return JSON.parse(localStorage.getItem('allTickets') || '[]');
-    }
-    function saveAllTickets(arr) {
-        localStorage.setItem('allTickets', JSON.stringify(arr));
-    }
-    function getUserTickets(email) {
-        return JSON.parse(localStorage.getItem('userTickets_' + email) || '[]');
-    }
-    function saveUserTickets(email, arr) {
-        localStorage.setItem('userTickets_' + email, JSON.stringify(arr));
-    }
-
-    // توليد رقم عشوائي غير مكرر (7-12 رقم)
-    function generateUniqueNumbers(count) {
-        let allTickets = getAllTickets();
-        let existing = new Set(allTickets);
-        let newNumbers = [];
-        let tries = 0;
-        while (newNumbers.length < count && tries < count * 100) {
-            let len = 7 + Math.floor(Math.random() * 6); // 7 إلى 12
-            let num = '';
-            for (let i = 0; i < len; i++) num += Math.floor(Math.random() * 10);
-            if (!existing.has(num)) {
-                newNumbers.push(num);
-                existing.add(num);
-            }
-            tries++;
+        function closeBuyScreen() {
+            document.getElementById('buyScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
         }
-        // أضف للأرقام الكلية
-        allTickets = allTickets.concat(newNumbers);
-        saveAllTickets(allTickets);
-        return newNumbers;
-    }
-
-    // عند الضغط على الدفع (اختبار)
-    function handleFakePayment() {
-        // في الوضع التجريبي: إذا لم يكن هناك مستخدم، أنشئ حساب مؤقت تلقائيًا
-        if (!window.currentUser) {
-            // إذا لم يكن هناك مستخدم حقيقي في localStorage، أنشئ حساب زائر مؤقت فقط في window وليس في localStorage
-            let cuLS = localStorage.getItem('currentUser');
-            if (cuLS) {
-                window.currentUser = JSON.parse(cuLS);
+        function updateBuyNumbers() {
+            var val = document.getElementById('usdtAmount').value;
+            var amount = parseInt(val);
+            if (!val || isNaN(amount) || amount < 1) {
+                document.getElementById('numbersInfo').textContent = 'سيتم منح 0 رقم';
+                document.getElementById('paymentSection').style.display = 'none';
             } else {
-                let guestEmail = 'guest_' + Date.now() + '@test.com';
-                let guestUser = { username: 'زائر', family: '', email: guestEmail, password: '' };
-                window.currentUser = guestUser;
-                // حفظه في المستخدمين
-                let users = getUsers();
-                users.push(guestUser);
-                saveUsers(users);
-                // لا تحفظه في localStorage حتى لا يراه الجميع
+                document.getElementById('numbersInfo').textContent = 'سيتم منح ' + amount + ' رقم' + (amount > 1 ? '' : '');
+                document.getElementById('paymentSection').style.display = 'flex';
             }
         }
-        var val = document.getElementById('usdtAmount').value;
-        var amount = parseInt(val);
-        if (!val || isNaN(amount) || amount < 1) {
-            alert('يرجى إدخال مبلغ صحيح');
-            return;
-        }
-        // توليد الأرقام
-        let newNumbers = generateUniqueNumbers(amount);
-        // حفظها للمستخدم
-        let userTickets = getUserTickets(window.currentUser.email);
-        userTickets = userTickets.concat(newNumbers);
-        saveUserTickets(window.currentUser.email, userTickets);
-        closeBuyScreen();
-        // إذا كان المستخدم حقيقي (مسجل دخول)، حدث currentUser في localStorage
-        if (window.currentUser && window.currentUser.email && !window.currentUser.email.startsWith('guest_')) {
-            localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
-        }
-        // عرض الأرقام مباشرة بعد الدفع
-        setTimeout(function() {
-            let msg = 'تم الدفع بنجاح!\n\nتم منحك ' + newNumbers.length + ' رقم للمشاركة في السحب.\n\nأرقامك:\n';
-            for (let i = 0; i < newNumbers.length; i++) {
-                msg += (i+1) + '- ' + newNumbers[i] + '\n';
+        function fixBuyAmount() {
+            var val = document.getElementById('usdtAmount').value;
+            var amount = parseInt(val);
+            if (!val || isNaN(amount) || amount < 1) {
+                document.getElementById('usdtAmount').value = 1;
             }
-            alert(msg);
-        }, 300);
-    }
+            updateBuyNumbers();
+        }
+
+        // قاعدة بيانات الأرقام الموزعة (localStorage)
+        function getAllTickets() {
+            return JSON.parse(localStorage.getItem('allTickets') || '[]');
+        }
+        function saveAllTickets(arr) {
+            localStorage.setItem('allTickets', JSON.stringify(arr));
+        }
+        function getUserTickets(email) {
+            return JSON.parse(localStorage.getItem('userTickets_' + email) || '[]');
+        }
+        function saveUserTickets(email, arr) {
+            localStorage.setItem('userTickets_' + email, JSON.stringify(arr));
+        }
+
+        // توليد رقم عشوائي غير مكرر (7-12 رقم)
+        function generateUniqueNumbers(count) {
+            let allTickets = getAllTickets();
+            let existing = new Set(allTickets);
+            let newNumbers = [];
+            let tries = 0;
+            while (newNumbers.length < count && tries < count * 100) {
+                let len = 7 + Math.floor(Math.random() * 6); // 7 إلى 12
+                let num = '';
+                for (let i = 0; i < len; i++) num += Math.floor(Math.random() * 10);
+                if (!existing.has(num)) {
+                    newNumbers.push(num);
+                    existing.add(num);
+                }
+                tries++;
+            }
+            // أضف للأرقام الكلية
+            allTickets = allTickets.concat(newNumbers);
+            saveAllTickets(allTickets);
+            return newNumbers;
+        }
+
+        // عند الضغط على الدفع (اختبار)
+        function handleFakePayment() {
+            // في الوضع التجريبي: إذا لم يكن هناك مستخدم، أنشئ حساب مؤقت تلقائيًا
+            if (!window.currentUser) {
+                // إذا لم يكن هناك مستخدم حقيقي في localStorage، أنشئ حساب زائر مؤقت فقط في window وليس في localStorage
+                let cuLS = localStorage.getItem('currentUser');
+                if (cuLS) {
+                    window.currentUser = JSON.parse(cuLS);
+                } else {
+                    let guestEmail = 'guest_' + Date.now() + '@test.com';
+                    let guestUser = { username: 'زائر', family: '', email: guestEmail, password: '' };
+                    window.currentUser = guestUser;
+                    // حفظه في المستخدمين
+                    let users = getUsers();
+                    users.push(guestUser);
+                    saveUsers(users);
+                    // لا تحفظه في localStorage حتى لا يراه الجميع
+                }
+            }
+            var val = document.getElementById('usdtAmount').value;
+            var amount = parseInt(val);
+            if (!val || isNaN(amount) || amount < 1) {
+                alert('يرجى إدخال مبلغ صحيح');
+                return;
+            }
+            // توليد الأرقام
+            let newNumbers = generateUniqueNumbers(amount);
+            // حفظها للمستخدم
+            let userTickets = getUserTickets(window.currentUser.email);
+            userTickets = userTickets.concat(newNumbers);
+            saveUserTickets(window.currentUser.email, userTickets);
+            closeBuyScreen();
+            // إذا كان المستخدم حقيقي (مسجل دخول)، حدث currentUser في localStorage
+            if (window.currentUser && window.currentUser.email && !window.currentUser.email.startsWith('guest_')) {
+                localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
+            }
+            // عرض الأرقام مباشرة بعد الدفع
+            setTimeout(function () {
+                let msg = 'تم الدفع بنجاح!\n\nتم منحك ' + newNumbers.length + ' رقم للمشاركة في السحب.\n\nأرقامك:\n';
+                for (let i = 0; i < newNumbers.length; i++) {
+                    msg += (i + 1) + '- ' + newNumbers[i] + '\n';
+                }
+                alert(msg);
+            }, 300);
+        }
     </script>
 
     <!-- Register Modal -->
@@ -930,7 +995,8 @@
         <!-- تم حذف خيارات تصدير قاعدة البيانات والسحب على الجائزة بناءً على طلب المستخدم -->
         // تم حذف دوال وخيارات السحب على الجائزة وتصدير قاعدة البيانات بناءً على طلب المستخدم
         <!-- مربع إدخال بيانات الفائز -->
-        <div style="margin: 40px auto 0; max-width: 500px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
+        <div
+            style="margin: 40px auto 0; max-width: 500px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
             <h3 style="color:#FFD700; margin-bottom:18px;">إرسال بيانات الفائز</h3>
             <form id="winnerForm" onsubmit="submitWinner(event)">
                 <div class="form-group">
@@ -948,156 +1014,183 @@
                 <button type="submit" class="submit-btn">إرسال الفائز</button>
                 <div id="winnerStatus" style="margin-top:12px;font-size:1rem;"></div>
             </form>
-            <button id="deleteWinnerBtn" class="app-btn" style="background:#c00;color:#fff;margin-top:16px;display:none;" onclick="deleteWinner()">حذف رسالة الفائز</button>
+            <button id="deleteWinnerBtn" class="app-btn"
+                style="background:#c00;color:#fff;margin-top:16px;display:none;" onclick="deleteWinner()">حذف رسالة
+                الفائز</button>
         </div>
-                // تصدير جميع الأرقام الممنوحة مع بيانات أصحابها إلى ملف CSV
-                function exportAllTicketsCSV() {
+        // تصدير جميع الأرقام الممنوحة مع بيانات أصحابها إلى ملف CSV
+        function exportAllTicketsCSV() {
+        const users = getUsers();
+        let rows = [['رقم السحب','اسم المستخدم','اسم العائلة','البريد الإلكتروني']];
+        users.forEach(u => {
+        const tickets = getUserTickets(u.email);
+        if (tickets.length === 0) {
+        // حتى لو لم يكن لديه أرقام، أضف صف باسم المستخدم والبريد بدون رقم
+        rows.push(['', u.username, u.family || '', u.email]);
+        } else {
+        for (let i = 0; i < tickets.length; i++) { rows.push([tickets[i], u.username, u.family || '' , u.email]); } }
+            }); let csvContent=rows.map(r=> '"'+r.join('","')+'"').join('\n');
+            // إنشاء ملف وتحميله
+            const blob = new Blob([csvContent], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'all_tickets_database.csv';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+            }
+            <div
+                style="margin: 40px auto 0; max-width: 500px; background: #222; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(0,0,0,0.10); color: #fff;">
+                <h3 style="color:#FFD700; margin-bottom:18px;">إضافة خبر جديد</h3>
+                <form id="newsForm" onsubmit="submitNews(event)">
+                    <div class="form-group">
+                        <label for="news-title">عنوان الخبر</label>
+                        <input type="text" id="news-title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="news-content">محتوى الخبر</label>
+                        <textarea id="news-content" name="content" required
+                            style="width:100%;min-height:80px;padding:12px;border-radius:12px;border:2px solid #FFD700;background:#111;color:#fff;font-size:1rem;"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">نشر الخبر</button>
+                    <div id="newsStatus" style="margin-top:12px;font-size:1rem;"></div>
+                </form>
+            </div>
+            <div id="adminNewsBox"
+                style="background: #fff; color: #222; border-radius: 18px; min-width: 220px; max-width: 520px; margin: 40px auto 0; padding: 22px 18px; box-shadow: 0 6px 24px rgba(0,0,0,0.10); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;">
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: #d19a00;">الأخبار (إدارة)
+                </div>
+                <div id="adminNewsContent">لا توجد أخبار حالياً.</div>
+            </div>
+            <div style="text-align:center; margin-top:30px;">
+                <button class="app-btn" onclick="logoutAdmin()">تسجيل خروج المطور</button>
+            </div>
+            <!-- زر وقائمة جميع الأرقام الممنوحة -->
+            <div
+                style="margin: 40px auto 0; max-width: 700px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
+                <button class="app-btn" style="margin-bottom:18px;" onclick="toggleAllTicketsList()">عرض جميع الأرقام
+                    الممنوحة</button>
+                <div id="allTicketsList"
+                    style="display:none; max-height:400px; overflow:auto; background:#181818; border-radius:14px; padding:18px 10px;">
+                    <!-- سيتم تعبئتها جافاسكريبت -->
+                </div>
+            </div>
+
+            <!-- جدول بيانات المستخدمين في الأسفل -->
+            <div class="app-content" id="adminUsersTable"></div>
+            <script>
+                // قائمة جميع الأرقام الممنوحة مع اسم المستخدم بجانب كل رقم
+                function toggleAllTicketsList() {
+                    const listDiv = document.getElementById('allTicketsList');
+                    if (listDiv.style.display === 'none' || listDiv.style.display === '') {
+                        renderAllTicketsList();
+                        listDiv.style.display = 'block';
+                    } else {
+                        listDiv.style.display = 'none';
+                    }
+                }
+
+                function renderAllTicketsList() {
                     const users = getUsers();
-                    let rows = [['رقم السحب','اسم المستخدم','اسم العائلة','البريد الإلكتروني']];
+                    let rows = [];
                     users.forEach(u => {
                         const tickets = getUserTickets(u.email);
-                        if (tickets.length === 0) {
-                            // حتى لو لم يكن لديه أرقام، أضف صف باسم المستخدم والبريد بدون رقم
-                            rows.push(['', u.username, u.family || '', u.email]);
-                        } else {
-                            for (let i = 0; i < tickets.length; i++) {
-                                rows.push([tickets[i], u.username, u.family || '', u.email]);
-                            }
+                        if (tickets.length === 0) return;
+                        for (let i = 0; i < tickets.length; i++) {
+                            rows.push({ number: tickets[i], name: u.username + (u.family ? ' ' + u.family : '') });
                         }
                     });
-                    let csvContent = rows.map(r => '"'+r.join('","')+'"').join('\n');
-                    // إنشاء ملف وتحميله
-                    const blob = new Blob([csvContent], {type: 'text/csv'});
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'all_tickets_database.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+                    if (rows.length === 0) {
+                        document.getElementById('allTicketsList').innerHTML = '<div style="color:#FFD700;text-align:center;">لا توجد أرقام ممنوحة بعد.</div>';
+                        return;
+                    }
+                    // ترتيب الأرقام تصاعدياً (اختياري)
+                    rows.sort((a, b) => a.number.localeCompare(b.number));
+                    let html = '<table style="width:100%;color:#fff;text-align:center;border-collapse:collapse;font-size:1.08rem;">';
+                    html += '<tr style="background:#FFD700;color:#222;"><th style="padding:8px 0;">الرقم</th><th style="padding:8px 0;">اسم المستخدم</th></tr>';
+                    rows.forEach(r => {
+                        html += `<tr style="border-bottom:1px solid #444;"><td style="padding:6px 0;color:#FFD700;">${r.number}</td><td>${r.name}</td></tr>`;
+                    });
+                    html += '</table>';
+                    document.getElementById('allTicketsList').innerHTML = html;
                 }
-        <div style="margin: 40px auto 0; max-width: 500px; background: #222; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(0,0,0,0.10); color: #fff;">
-            <h3 style="color:#FFD700; margin-bottom:18px;">إضافة خبر جديد</h3>
-            <form id="newsForm" onsubmit="submitNews(event)">
-                <div class="form-group">
-                    <label for="news-title">عنوان الخبر</label>
-                    <input type="text" id="news-title" name="title" required>
-                </div>
-                <div class="form-group">
-                    <label for="news-content">محتوى الخبر</label>
-                    <textarea id="news-content" name="content" required style="width:100%;min-height:80px;padding:12px;border-radius:12px;border:2px solid #FFD700;background:#111;color:#fff;font-size:1rem;"></textarea>
-                </div>
-                <button type="submit" class="submit-btn">نشر الخبر</button>
-                <div id="newsStatus" style="margin-top:12px;font-size:1rem;"></div>
-            </form>
-        </div>
-        <div id="adminNewsBox" style="background: #fff; color: #222; border-radius: 18px; min-width: 220px; max-width: 520px; margin: 40px auto 0; padding: 22px 18px; box-shadow: 0 6px 24px rgba(0,0,0,0.10); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;">
-            <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: #d19a00;">الأخبار (إدارة)</div>
-            <div id="adminNewsContent">لا توجد أخبار حالياً.</div>
-        </div>
-        <div style="text-align:center; margin-top:30px;">
-            <button class="app-btn" onclick="logoutAdmin()">تسجيل خروج المطور</button>
-        </div>
-        <!-- زر وقائمة جميع الأرقام الممنوحة -->
-        <div style="margin: 40px auto 0; max-width: 700px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
-            <button class="app-btn" style="margin-bottom:18px;" onclick="toggleAllTicketsList()">عرض جميع الأرقام الممنوحة</button>
-            <div id="allTicketsList" style="display:none; max-height:400px; overflow:auto; background:#181818; border-radius:14px; padding:18px 10px;">
-                <!-- سيتم تعبئتها جافاسكريبت -->
-            </div>
-        </div>
 
-        <!-- جدول بيانات المستخدمين في الأسفل -->
-        <div class="app-content" id="adminUsersTable"></div>
-    <script>
-    // قائمة جميع الأرقام الممنوحة مع اسم المستخدم بجانب كل رقم
-    function toggleAllTicketsList() {
-        const listDiv = document.getElementById('allTicketsList');
-        if (listDiv.style.display === 'none' || listDiv.style.display === '') {
-            renderAllTicketsList();
-            listDiv.style.display = 'block';
-        } else {
-            listDiv.style.display = 'none';
-        }
-    }
+                // تحديث القائمة تلقائياً عند أي تغيير في المستخدمين أو الأرقام
+                function syncAllTicketsList() {
+                    const listDiv = document.getElementById('allTicketsList');
+                    if (listDiv && listDiv.style.display === 'block') {
+                        renderAllTicketsList();
+                    }
+                }
 
-    function renderAllTicketsList() {
-        const users = getUsers();
-        let rows = [];
-        users.forEach(u => {
-            const tickets = getUserTickets(u.email);
-            if (tickets.length === 0) return;
-            for (let i = 0; i < tickets.length; i++) {
-                rows.push({number: tickets[i], name: u.username + (u.family ? ' ' + u.family : '')});
-            }
-        });
-        if (rows.length === 0) {
-            document.getElementById('allTicketsList').innerHTML = '<div style="color:#FFD700;text-align:center;">لا توجد أرقام ممنوحة بعد.</div>';
-            return;
-        }
-        // ترتيب الأرقام تصاعدياً (اختياري)
-        rows.sort((a, b) => a.number.localeCompare(b.number));
-        let html = '<table style="width:100%;color:#fff;text-align:center;border-collapse:collapse;font-size:1.08rem;">';
-        html += '<tr style="background:#FFD700;color:#222;"><th style="padding:8px 0;">الرقم</th><th style="padding:8px 0;">اسم المستخدم</th></tr>';
-        rows.forEach(r => {
-            html += `<tr style="border-bottom:1px solid #444;"><td style="padding:6px 0;color:#FFD700;">${r.number}</td><td>${r.name}</td></tr>`;
-        });
-        html += '</table>';
-        document.getElementById('allTicketsList').innerHTML = html;
-    }
+                // تحديث القائمة بعد تسجيل مستخدم جديد
+                const origRegister = register;
+                register = function () {
+                    origRegister.apply(this, arguments);
+                    setTimeout(syncAllTicketsList, 300);
+                }
 
-    // تحديث القائمة تلقائياً عند أي تغيير في المستخدمين أو الأرقام
-    function syncAllTicketsList() {
-        const listDiv = document.getElementById('allTicketsList');
-        if (listDiv && listDiv.style.display === 'block') {
-            renderAllTicketsList();
-        }
-    }
-
-    // تحديث القائمة بعد تسجيل مستخدم جديد
-    const origRegister = register;
-    register = function() {
-        origRegister.apply(this, arguments);
-        setTimeout(syncAllTicketsList, 300);
-    }
-
-    // تحديث القائمة بعد شراء رقم جديد
-    const origHandleFakePayment = handleFakePayment;
-    handleFakePayment = function() {
-        origHandleFakePayment.apply(this, arguments);
-        setTimeout(syncAllTicketsList, 300);
-    }
-    </script>
+                // تحديث القائمة بعد شراء رقم جديد
+                const origHandleFakePayment = handleFakePayment;
+                handleFakePayment = function () {
+                    origHandleFakePayment.apply(this, arguments);
+                    setTimeout(syncAllTicketsList, 300);
+                }
+            </script>
     </div>
 
     <!-- نافذة منبثقة لرسالة الفائز -->
-    <div id="winnerPopup" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
-        <div style="background:linear-gradient(135deg,#FFD700 0%,#FFA500 100%);box-shadow:0 0 60px 10px #FFD70080,0 0 0 100vw #0008;max-width:420px;width:90vw;padding:48px 24px 36px 24px;border-radius:32px;display:flex;flex-direction:column;align-items:center;position:relative;animation:popWinner 0.7s cubic-bezier(.68,-0.55,.27,1.55);">
-            <span onclick="closeWinnerPopup()" style="position:absolute;top:18px;left:18px;font-size:2.2rem;cursor:pointer;color:#fff;font-weight:bold;z-index:2;">&times;</span>
-            <div style="font-size:2.2rem;font-weight:900;color:#fff;text-shadow:0 2px 12px #FFA500;letter-spacing:2px;margin-bottom:18px;">🎉 مبروك للفائز! 🎉</div>
+    <div id="winnerPopup"
+        style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+        <div
+            style="background:linear-gradient(135deg,#FFD700 0%,#FFA500 100%);box-shadow:0 0 60px 10px #FFD70080,0 0 0 100vw #0008;max-width:420px;width:90vw;padding:48px 24px 36px 24px;border-radius:32px;display:flex;flex-direction:column;align-items:center;position:relative;animation:popWinner 0.7s cubic-bezier(.68,-0.55,.27,1.55);">
+            <span onclick="closeWinnerPopup()"
+                style="position:absolute;top:18px;left:18px;font-size:2.2rem;cursor:pointer;color:#fff;font-weight:bold;z-index:2;">&times;</span>
+            <div
+                style="font-size:2.2rem;font-weight:900;color:#fff;text-shadow:0 2px 12px #FFA500;letter-spacing:2px;margin-bottom:18px;">
+                🎉 مبروك للفائز! 🎉</div>
             <div id="winnerPopupName" style="font-size:1.5rem;font-weight:700;color:#222;margin-bottom:10px;"></div>
             <div id="winnerPopupNumber" style="font-size:1.2rem;font-weight:600;color:#333;margin-bottom:10px;"></div>
-            <div id="winnerPopupAmount" style="font-size:1.3rem;font-weight:700;color:#B8860B;margin-bottom:18px;"></div>
+            <div id="winnerPopupAmount" style="font-size:1.3rem;font-weight:700;color:#B8860B;margin-bottom:18px;">
+            </div>
             <div style="font-size:1.1rem;color:#fff;opacity:0.8;">نتمنى لك حظاً سعيداً في السحوبات القادمة!</div>
         </div>
     </div>
-    <style>@keyframes popWinner{0%{transform:scale(0.7) rotate(-8deg);opacity:0;}80%{transform:scale(1.08) rotate(2deg);}100%{transform:scale(1) rotate(0);opacity:1;}}</style>
+    <style>
+        @keyframes popWinner {
+            0% {
+                transform: scale(0.7) rotate(-8deg);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.08) rotate(2deg);
+            }
+
+            100% {
+                transform: scale(1) rotate(0);
+                opacity: 1;
+            }
+        }
+    </style>
 
     <script>
-    // --- منطق الفائز ---
-    async function fetchWinner() {
-        try {
-            const res = await fetch('/winner');
-            if (!res.ok) throw new Error('خطأ في جلب الفائز');
-            const winner = await res.json();
-            showWinnerPopupIfNeeded(winner);
-            // تحديث زر حذف الفائز في لوحة المطور
-            if (document.getElementById('deleteWinnerBtn')) {
-                document.getElementById('deleteWinnerBtn').style.display = winner ? 'block' : 'none';
+        // --- منطق الفائز ---
+        async function fetchWinner() {
+            try {
+                const res = await fetch('/winner');
+                if (!res.ok) throw new Error('خطأ في جلب الفائز');
+                const winner = await res.json();
+                showWinnerPopupIfNeeded(winner);
+                // تحديث زر حذف الفائز في لوحة المطور
+                if (document.getElementById('deleteWinnerBtn')) {
+                    document.getElementById('deleteWinnerBtn').style.display = winner ? 'block' : 'none';
+                }
+            } catch (e) {
+                // تجاهل الخطأ
             }
-        } catch (e) {
-            // تجاهل الخطأ
         }
-    }
         // منطق منع تكرار ظهور رسالة الفائز بعد الإغلاق حتى يسجل المستخدم خروج أو تدخل رسالة فائز جديدة (لكل مستخدم)
         let lastWinnerId = null;
         function getWinnerPopupClosed() {
@@ -1110,7 +1203,7 @@
         function setWinnerPopupClosed() {
             if (!window.currentUser) return;
             let closedMap = {};
-            try { closedMap = JSON.parse(localStorage.getItem('winnerPopupClosedMap') || '{}'); } catch {}
+            try { closedMap = JSON.parse(localStorage.getItem('winnerPopupClosedMap') || '{}'); } catch { }
             closedMap[window.currentUser.email] = lastWinnerId;
             localStorage.setItem('winnerPopupClosedMap', JSON.stringify(closedMap));
         }
@@ -1119,84 +1212,84 @@
             setWinnerPopupClosed();
         }
 
-    // منطق ظهور رسالة الفائز فقط للمستخدمين المسجلين (داخل mainApp)
-    function showWinnerPopupIfNeeded(winner) {
-        const popup = document.getElementById('winnerPopup');
-        const isLoggedIn = (window.currentUser && document.getElementById('mainApp').style.display === 'block');
-        if (winner && winner.name && winner.number && winner.amount && isLoggedIn) {
-            // إذا تغيرت رسالة الفائز، أعد تعيين حالة الإغلاق
-            if (lastWinnerId !== winner.id) {
-                lastWinnerId = winner.id;
-                // حذف حالة الإغلاق لهذا المستخدم فقط عند تغيير الفائز
-                if (window.currentUser) {
-                    let closedMap = {};
-                    try { closedMap = JSON.parse(localStorage.getItem('winnerPopupClosedMap') || '{}'); } catch {}
-                    delete closedMap[window.currentUser.email];
-                    localStorage.setItem('winnerPopupClosedMap', JSON.stringify(closedMap));
+        // منطق ظهور رسالة الفائز فقط للمستخدمين المسجلين (داخل mainApp)
+        function showWinnerPopupIfNeeded(winner) {
+            const popup = document.getElementById('winnerPopup');
+            const isLoggedIn = (window.currentUser && document.getElementById('mainApp').style.display === 'block');
+            if (winner && winner.name && winner.number && winner.amount && isLoggedIn) {
+                // إذا تغيرت رسالة الفائز، أعد تعيين حالة الإغلاق
+                if (lastWinnerId !== winner.id) {
+                    lastWinnerId = winner.id;
+                    // حذف حالة الإغلاق لهذا المستخدم فقط عند تغيير الفائز
+                    if (window.currentUser) {
+                        let closedMap = {};
+                        try { closedMap = JSON.parse(localStorage.getItem('winnerPopupClosedMap') || '{}'); } catch { }
+                        delete closedMap[window.currentUser.email];
+                        localStorage.setItem('winnerPopupClosedMap', JSON.stringify(closedMap));
+                    }
                 }
-            }
-            if (!getWinnerPopupClosed()) {
-                document.getElementById('winnerPopupName').textContent = 'الاسم: ' + winner.name;
-                document.getElementById('winnerPopupNumber').textContent = 'رقم الفائز: ' + winner.number;
-                document.getElementById('winnerPopupAmount').textContent = 'المبلغ: $' + winner.amount;
-                popup.style.display = 'flex';
+                if (!getWinnerPopupClosed()) {
+                    document.getElementById('winnerPopupName').textContent = 'الاسم: ' + winner.name;
+                    document.getElementById('winnerPopupNumber').textContent = 'رقم الفائز: ' + winner.number;
+                    document.getElementById('winnerPopupAmount').textContent = 'المبلغ: $' + winner.amount;
+                    popup.style.display = 'flex';
+                } else {
+                    popup.style.display = 'none';
+                }
             } else {
                 popup.style.display = 'none';
             }
-        } else {
-            popup.style.display = 'none';
         }
-    }
 
 
 
-    async function submitWinner(event) {
-        event.preventDefault();
-        const name = document.getElementById('winner-name').value.trim();
-        const number = document.getElementById('winner-number').value.trim();
-        const amountStr = document.getElementById('winner-amount').value.trim();
-        const amount = Number(amountStr);
-        const statusDiv = document.getElementById('winnerStatus');
-        statusDiv.textContent = '';
-        if (!name || !number || !amountStr || isNaN(amount) || amount <= 0) {
-            statusDiv.textContent = 'يرجى تعبئة جميع الحقول بشكل صحيح.';
-            return;
+        async function submitWinner(event) {
+            event.preventDefault();
+            const name = document.getElementById('winner-name').value.trim();
+            const number = document.getElementById('winner-number').value.trim();
+            const amountStr = document.getElementById('winner-amount').value.trim();
+            const amount = Number(amountStr);
+            const statusDiv = document.getElementById('winnerStatus');
+            statusDiv.textContent = '';
+            if (!name || !number || !amountStr || isNaN(amount) || amount <= 0) {
+                statusDiv.textContent = 'يرجى تعبئة جميع الحقول بشكل صحيح.';
+                return;
+            }
+            try {
+                const res = await fetch('/winner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, number, amount })
+                });
+                if (!res.ok) throw new Error('فشل في إرسال بيانات الفائز');
+                document.getElementById('winnerForm').reset();
+                statusDiv.style.color = '#0c0';
+                statusDiv.textContent = 'تم إرسال بيانات الفائز بنجاح!';
+                fetchWinner();
+            } catch (e) {
+                statusDiv.style.color = '#c00';
+                statusDiv.textContent = 'حدث خطأ أثناء الإرسال.';
+            }
         }
-        try {
-            const res = await fetch('/winner', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, number, amount })
-            });
-            if (!res.ok) throw new Error('فشل في إرسال بيانات الفائز');
-            document.getElementById('winnerForm').reset();
-            statusDiv.style.color = '#0c0';
-            statusDiv.textContent = 'تم إرسال بيانات الفائز بنجاح!';
+
+        async function deleteWinner() {
+            if (!confirm('هل أنت متأكد من حذف رسالة الفائز؟')) return;
+            try {
+                const res = await fetch('/winner', { method: 'DELETE' });
+                if (!res.ok) throw new Error('فشل في حذف رسالة الفائز');
+                fetchWinner();
+                document.getElementById('winnerStatus').style.color = '#0c0';
+                document.getElementById('winnerStatus').textContent = 'تم حذف رسالة الفائز.';
+            } catch (e) {
+                alert('حدث خطأ أثناء الحذف.');
+            }
+        }
+
+        // جلب رسالة الفائز عند تحميل الصفحة وتحديثها كل 5 ثوانٍ تلقائياً
+        window.addEventListener('DOMContentLoaded', () => {
             fetchWinner();
-        } catch (e) {
-            statusDiv.style.color = '#c00';
-            statusDiv.textContent = 'حدث خطأ أثناء الإرسال.';
-        }
-    }
-
-    async function deleteWinner() {
-        if (!confirm('هل أنت متأكد من حذف رسالة الفائز؟')) return;
-        try {
-            const res = await fetch('/winner', { method: 'DELETE' });
-            if (!res.ok) throw new Error('فشل في حذف رسالة الفائز');
-            fetchWinner();
-            document.getElementById('winnerStatus').style.color = '#0c0';
-            document.getElementById('winnerStatus').textContent = 'تم حذف رسالة الفائز.';
-        } catch (e) {
-            alert('حدث خطأ أثناء الحذف.');
-        }
-    }
-
-    // جلب رسالة الفائز عند تحميل الصفحة وتحديثها كل 5 ثوانٍ تلقائياً
-    window.addEventListener('DOMContentLoaded', () => {
-        fetchWinner();
-        setInterval(fetchWinner, 5000);
-    });
+            setInterval(fetchWinner, 5000);
+        });
         // جلب وعرض الأخبار في واجهة المستخدمين
         async function fetchNews() {
             try {
@@ -1278,99 +1371,99 @@
                 statusDiv.textContent = 'حدث خطأ أثناء النشر.';
             }
         }
-                // عداد المشتركين المتزايد بشكل مستمر بناءً على الوقت منذ بداية ثابتة
-                (function() {
-                    const counterElem = document.getElementById('subscribersCounter');
-                    const START = 1000000;
-                    // تاريخ بداية العداد (يمكن تغييره حسب الحاجة)
-                    const START_DATE = new Date('2026-04-12T00:00:00Z');
-                    // مولد أرقام عشوائية ثابتة لكل ساعة ولكل دقيقة
-                    function seededRandom(seed) {
-                        let x = Math.sin(seed) * 10000;
-                        return x - Math.floor(x);
+        // عداد المشتركين المتزايد بشكل مستمر بناءً على الوقت منذ بداية ثابتة
+        (function () {
+            const counterElem = document.getElementById('subscribersCounter');
+            const START = 1000000;
+            // تاريخ بداية العداد (يمكن تغييره حسب الحاجة)
+            const START_DATE = new Date('2026-04-12T00:00:00Z');
+            // مولد أرقام عشوائية ثابتة لكل ساعة ولكل دقيقة
+            function seededRandom(seed) {
+                let x = Math.sin(seed) * 10000;
+                return x - Math.floor(x);
+            }
+            // احسب كم ساعة مرت منذ البداية
+            function getHoursSinceStart() {
+                const now = new Date();
+                return Math.floor((now.getTime() - START_DATE.getTime()) / 3600000);
+            }
+            // احسب كم دقيقة مرت في الساعة الحالية
+            function getMinutesInHour() {
+                const now = new Date();
+                return now.getMinutes();
+            }
+            // احسب كم ثانية مرت في الدقيقة الحالية
+            function getSecondsInMinute() {
+                const now = new Date();
+                return now.getSeconds();
+            }
+            // لكل ساعة، حدد هدف الزيادة (100-150) بشكل ثابت لكل ساعة
+            function getHourTarget(hourIndex) {
+                return 300 + Math.floor(seededRandom(hourIndex + 12345) * 51);
+            }
+            // وزع الزيادة داخل الساعة على دقائق بشكل عشوائي تصاعدي
+            function getMinuteIncrements(hourIndex) {
+                // 60 دقيقة
+                const increments = [];
+                let total = 0;
+                let target = getHourTarget(hourIndex);
+                // وزع الهدف على 60 دقيقة بشكل عشوائي تصاعدي
+                for (let i = 0; i < 60; i++) {
+                    // كل دقيقة زيادة عشوائية بين 0 و(المتبقي/المتبقي من الدقائق)*2 تقريبًا
+                    let left = target - total;
+                    let max = Math.ceil(left / (60 - i) * 2);
+                    let inc = 1 + Math.floor(seededRandom(hourIndex * 1000 + i * 77) * max);
+                    if (inc > left) inc = left;
+                    increments.push(inc);
+                    total += inc;
+                }
+                // إذا زاد المجموع عن الهدف (بسبب التقريب)، عدل آخر قيمة
+                if (total > target) {
+                    increments[59] -= (total - target);
+                }
+                return increments;
+            }
+            function computeSubscribers() {
+                let total = START;
+                let hours = getHoursSinceStart();
+                // اجمع زيادات كل الساعات السابقة
+                for (let i = 0; i < hours; i++) {
+                    total += getHourTarget(i);
+                }
+                // أضف زيادات الدقائق المنقضية من الساعة الحالية
+                const currentHour = hours;
+                const min = getMinutesInHour();
+                const sec = getSecondsInMinute();
+                const increments = getMinuteIncrements(currentHour);
+                for (let i = 0; i < min; i++) {
+                    total += increments[i];
+                }
+                // داخل الدقيقة الحالية: وزع الزيادة بشكل لحظي (كل ثانية)
+                if (min < 60) {
+                    let thisMinInc = increments[min];
+                    // وزعها على 60 ثانية بشكل تصاعدي عشوائي
+                    let secIncs = [];
+                    let secTotal = 0;
+                    for (let s = 0; s < 60; s++) {
+                        let left = thisMinInc - secTotal;
+                        let max = Math.ceil(left / (60 - s) * 2);
+                        let inc = (s === 59) ? left : Math.floor(seededRandom(currentHour * 100000 + min * 100 + s * 13) * max);
+                        if (inc > left) inc = left;
+                        secIncs.push(inc);
+                        secTotal += inc;
                     }
-                    // احسب كم ساعة مرت منذ البداية
-                    function getHoursSinceStart() {
-                        const now = new Date();
-                        return Math.floor((now.getTime() - START_DATE.getTime()) / 3600000);
+                    for (let s = 0; s < sec; s++) {
+                        total += secIncs[s];
                     }
-                    // احسب كم دقيقة مرت في الساعة الحالية
-                    function getMinutesInHour() {
-                        const now = new Date();
-                        return now.getMinutes();
-                    }
-                    // احسب كم ثانية مرت في الدقيقة الحالية
-                    function getSecondsInMinute() {
-                        const now = new Date();
-                        return now.getSeconds();
-                    }
-                    // لكل ساعة، حدد هدف الزيادة (100-150) بشكل ثابت لكل ساعة
-                    function getHourTarget(hourIndex) {
-                        return 300 + Math.floor(seededRandom(hourIndex + 12345) * 51);
-                    }
-                    // وزع الزيادة داخل الساعة على دقائق بشكل عشوائي تصاعدي
-                    function getMinuteIncrements(hourIndex) {
-                        // 60 دقيقة
-                        const increments = [];
-                        let total = 0;
-                        let target = getHourTarget(hourIndex);
-                        // وزع الهدف على 60 دقيقة بشكل عشوائي تصاعدي
-                        for (let i = 0; i < 60; i++) {
-                            // كل دقيقة زيادة عشوائية بين 0 و(المتبقي/المتبقي من الدقائق)*2 تقريبًا
-                            let left = target - total;
-                            let max = Math.ceil(left / (60 - i) * 2);
-                            let inc = 1 + Math.floor(seededRandom(hourIndex * 1000 + i * 77) * max);
-                            if (inc > left) inc = left;
-                            increments.push(inc);
-                            total += inc;
-                        }
-                        // إذا زاد المجموع عن الهدف (بسبب التقريب)، عدل آخر قيمة
-                        if (total > target) {
-                            increments[59] -= (total - target);
-                        }
-                        return increments;
-                    }
-                    function computeSubscribers() {
-                        let total = START;
-                        let hours = getHoursSinceStart();
-                        // اجمع زيادات كل الساعات السابقة
-                        for (let i = 0; i < hours; i++) {
-                            total += getHourTarget(i);
-                        }
-                        // أضف زيادات الدقائق المنقضية من الساعة الحالية
-                        const currentHour = hours;
-                        const min = getMinutesInHour();
-                        const sec = getSecondsInMinute();
-                        const increments = getMinuteIncrements(currentHour);
-                        for (let i = 0; i < min; i++) {
-                            total += increments[i];
-                        }
-                        // داخل الدقيقة الحالية: وزع الزيادة بشكل لحظي (كل ثانية)
-                        if (min < 60) {
-                            let thisMinInc = increments[min];
-                            // وزعها على 60 ثانية بشكل تصاعدي عشوائي
-                            let secIncs = [];
-                            let secTotal = 0;
-                            for (let s = 0; s < 60; s++) {
-                                let left = thisMinInc - secTotal;
-                                let max = Math.ceil(left / (60 - s) * 2);
-                                let inc = (s === 59) ? left : Math.floor(seededRandom(currentHour * 100000 + min * 100 + s * 13) * max);
-                                if (inc > left) inc = left;
-                                secIncs.push(inc);
-                                secTotal += inc;
-                            }
-                            for (let s = 0; s < sec; s++) {
-                                total += secIncs[s];
-                            }
-                        }
-                        return total;
-                    }
-                    function updateCounterDisplay() {
-                        counterElem.textContent = computeSubscribers().toLocaleString('en-US');
-                    }
-                    setInterval(updateCounterDisplay, 1000);
-                    updateCounterDisplay();
-                })();
+                }
+                return total;
+            }
+            function updateCounterDisplay() {
+                counterElem.textContent = computeSubscribers().toLocaleString('en-US');
+            }
+            setInterval(updateCounterDisplay, 1000);
+            updateCounterDisplay();
+        })();
         // بيانات دخول المطور (يمكنك تغييرها كما تريد)
         const ADMIN_EMAIL = "developer@mosabaqa.com";
         const ADMIN_PASSWORD = "devpass2026";
@@ -1417,7 +1510,7 @@
                 let prizeKey = 'prizeAddress_' + u.email;
                 let prizeVal = localStorage.getItem(prizeKey) || '';
                 html += `<tr style="border-bottom:1px solid #444;">
-                    <td style="color:#FFD700;font-weight:bold;">${idx+1}</td>
+                    <td style="color:#FFD700;font-weight:bold;">${idx + 1}</td>
                     <td>${u.username}</td>
                     <td>${u.family || ''}</td>
                     <td>${u.email}</td>
@@ -1443,7 +1536,7 @@
                 msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>الأرقام:</b></div>`;
                 msg += `<div style='background:#222;color:#FFD700;padding:10px 12px;border-radius:10px;max-height:220px;overflow:auto;font-size:1.05rem;line-height:2;'>`;
                 for (let i = 0; i < tickets.length; i++) {
-                    msg += (i+1) + '- ' + tickets[i] + '<br>';
+                    msg += (i + 1) + '- ' + tickets[i] + '<br>';
                 }
                 msg += `</div>`;
             }
@@ -1566,7 +1659,7 @@
             } else {
                 let html = '';
                 for (let i = 0; i < tickets.length; i++) {
-                    html += '<div style="background:#222; color:#FFD700; border-radius:12px; padding:10px 18px; margin-bottom:6px; width:90%; max-width:340px; font-size:1.1rem; direction:ltr; text-align:center; letter-spacing:2px; margin-left:auto; margin-right:auto;">' + (i+1) + '- ' + tickets[i] + '</div>';
+                    html += '<div style="background:#222; color:#FFD700; border-radius:12px; padding:10px 18px; margin-bottom:6px; width:90%; max-width:340px; font-size:1.1rem; direction:ltr; text-align:center; letter-spacing:2px; margin-left:auto; margin-right:auto;">' + (i + 1) + '- ' + tickets[i] + '</div>';
                 }
                 ticketsList.innerHTML = html;
             }
@@ -1583,11 +1676,12 @@
         }
 
         // Close modal when clicking outside
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             if (event.target.className === "modal") {
                 event.target.style.display = "none";
             }
         }
     </script>
 </body>
+
 </html>

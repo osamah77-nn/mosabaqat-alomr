@@ -178,3 +178,11 @@ app.post('/register', async (req, res) => {
 app.listen(process.env.PORT || 5000, '0.0.0.0', () => {
     console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
+// معالجة أخطاء عامة لمنع انهيار السيرفر
+process.on('uncaughtException', function (err) {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', function (err) {
+    console.error('Unhandled Rejection:', err);
+});
