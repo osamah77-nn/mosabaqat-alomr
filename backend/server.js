@@ -1,9 +1,9 @@
-// استيراد المكتبات في الأعلى
-const express = require('express');
+// استيراد المكتبات في الأعلى (ترتيب صحيح)
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
+const { MongoClient, ObjectId } = require('mongodb');
 const { createBinancePayOrder } = require('./binancePay');
 // تعريف التطبيق مباشرة بعد الاستيراد
 const app = express();
@@ -41,9 +41,7 @@ app.post('/create-payment', async (req, res) => {
     }
 });
 
-// تخزين مؤقت للأخبار
 // ربط MongoDB
-const { MongoClient, ObjectId } = require('mongodb');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'mosabaqat_alomr';
 let db, newsCollection, participantsCollection, winnerCollection;
@@ -57,7 +55,9 @@ async function connectDB() {
     winnerCollection = db.collection('winner');
     console.log('Connected to MongoDB');
 }
-connectDB().catch(console.error);
+connectDB().catch(err => {
+    console.error("MongoDB connection failed:", err);
+});
 
 // بيانات المطور (admin) الثابتة
 const ADMIN_EMAIL = "developer@mosabaqa.com";
@@ -171,7 +171,7 @@ app.post('/register', async (req, res) => {
     res.status(201).json({ username, email, registrationNumber, role });
 });
 
-// تشغيل السيرفر في النهاية
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+// تشغيل السيرفر في النهاية (متوافق مع Render)
+app.listen(process.env.PORT || 5000, '0.0.0.0', () => {
+    console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
