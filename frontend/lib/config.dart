@@ -1,5 +1,5 @@
 // Configuration file for API endpoints
 class Config {
-  // ضع هنا رابط الـ Backend النهائي بعد النشر على Render
-  static const String baseUrl = 'https://your-backend.onrender.com';
+  // رابط الـ Backend على Render
+  static const String baseUrl = 'https://the-contest-of-a-lifetime-2wuc.onrender.com';
 }

@@ -30,17 +30,28 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _isConnecting = false;
 
   Future<void> _handleRegister() async {
-    if (_nameController.text.isEmpty) return;
+    if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى تعبئة جميع الحقول')),
+      );
+      return;
+    }
 
     setState(() => _isConnecting = true);
     try {
       final response = await http.post(
         Uri.parse('${Config.baseUrl}/register'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': _nameController.text}),
+        body: jsonEncode({
+          'username': _nameController.text,
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        }),
       );
 
       if (response.statusCode == 201) {
@@ -59,7 +70,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر الاتصال بالسيرفر، تأكد من تشغيله')),
+        SnackBar(content: Text('تعذر الاتصال بالسيرفر: $e')),
       );
     } finally {
       setState(() => _isConnecting = false);
@@ -72,19 +83,57 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       appBar: AppBar(title: const Text('التسجيل في مسابقة العمر'), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // ...تم حذف العبارة التوضيحية بناءً على طلبك...
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'اسم المشارك كامل', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'الاسم الكامل',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'البريد الإلكتروني',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'كلمة المرور',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+              ),
             ),
             const SizedBox(height: 20),
             _isConnecting 
               ? const CircularProgressIndicator() 
-              : ElevatedButton(onPressed: _handleRegister, child: const Text('تسجيل الحصول على رقم المشاركة')),
-            const SizedBox(height: 30),
+              : SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _handleRegister,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('تسجيل', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 10),
             OutlinedButton(
               onPressed: () {
                 Navigator.push(
