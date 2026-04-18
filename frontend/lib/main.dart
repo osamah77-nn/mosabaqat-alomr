@@ -169,7 +169,7 @@ class _DeveloperLoginScreenState extends State<DeveloperLoginScreen> {
         Uri.parse('${Config.baseUrl}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'username': _emailController.text.trim(),
+          'email': _emailController.text.trim(),
           'password': _passwordController.text
         }),
       );
