@@ -45,7 +45,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() => _isConnecting = true);
     try {
       final response = await http.post(
-        Uri.parse('https://the-contest-of-a-lifetime-2wuc.onrender.com/register')
+        Uri.parse('${Config.baseUrl}/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': _nameController.text,
