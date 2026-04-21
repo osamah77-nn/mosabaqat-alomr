@@ -740,7 +740,101 @@
             </div>
         </div>
         <div id="paymentSection"
-            style="text-align:center; margin-top:0; height:0; display:none; flex-direction:column; align-items:center;">
+            style="text-align:center; margin-top:0; height:0; width:100%; max-width:860px; display:none; flex-direction:column; align-items:center;">
+            <button id="openManualPaymentBtn" class="app-btn" onclick="openManualPaymentPanel()">الدفع</button>
+            <div id="manualPaymentPanel"
+                style="display:none; width:100%; margin-top:20px; background:rgba(0,0,0,0.85); border-radius:22px; padding:28px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10);">
+                <div id="manualPaymentSummary" style="color:#FFD700; font-size:1.05rem; margin-bottom:18px;"></div>
+                <div class="payment-target-card" data-method="Binance UID" data-target="BINANCE_UID_PLACEHOLDER"
+                    style="background:#222; border:1px solid rgba(255,215,0,0.25); border-radius:16px; padding:18px; margin-bottom:18px; text-align:right;">
+                    <div style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">Binance UID</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;">
+                        <span id="binanceUidValue"
+                            style="color:#fff; direction:ltr; text-align:left; overflow-wrap:anywhere;">BINANCE_UID_PLACEHOLDER</span>
+                        <button type="button" class="app-btn" style="padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                            onclick="copyPaymentValue('binanceUidValue')">نسخ</button>
+                    </div>
+                    <button type="button" class="app-btn" style="margin-top:12px; padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                        onclick="selectPaymentTarget(this.parentNode)">اختيار هذا الخيار</button>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; width:100%;">
+                    <div class="payment-target-card" data-method="Ethereum" data-target="ETHEREUM_ADDRESS_PLACEHOLDER"
+                        style="background:#222; border:1px solid rgba(255,215,0,0.25); border-radius:16px; padding:18px; text-align:right;">
+                        <div style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">Ethereum</div>
+                        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
+                            <span id="walletEthereum"
+                                style="color:#fff; direction:ltr; text-align:left; overflow-wrap:anywhere;">ETHEREUM_ADDRESS_PLACEHOLDER</span>
+                            <button type="button" class="app-btn" style="padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                                onclick="copyPaymentValue('walletEthereum')">نسخ</button>
+                        </div>
+                        <button type="button" class="app-btn" style="margin-top:12px; padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                            onclick="selectPaymentTarget(this.parentNode)">اختيار هذا العنوان</button>
+                    </div>
+                    <div class="payment-target-card" data-method="Bitcoin" data-target="BITCOIN_ADDRESS_PLACEHOLDER"
+                        style="background:#222; border:1px solid rgba(255,215,0,0.25); border-radius:16px; padding:18px; text-align:right;">
+                        <div style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">Bitcoin</div>
+                        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
+                            <span id="walletBitcoin"
+                                style="color:#fff; direction:ltr; text-align:left; overflow-wrap:anywhere;">BITCOIN_ADDRESS_PLACEHOLDER</span>
+                            <button type="button" class="app-btn" style="padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                                onclick="copyPaymentValue('walletBitcoin')">نسخ</button>
+                        </div>
+                        <button type="button" class="app-btn" style="margin-top:12px; padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                            onclick="selectPaymentTarget(this.parentNode)">اختيار هذا العنوان</button>
+                    </div>
+                    <div class="payment-target-card" data-method="BNB" data-target="BNB_ADDRESS_PLACEHOLDER"
+                        style="background:#222; border:1px solid rgba(255,215,0,0.25); border-radius:16px; padding:18px; text-align:right;">
+                        <div style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">BNB</div>
+                        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
+                            <span id="walletBnb"
+                                style="color:#fff; direction:ltr; text-align:left; overflow-wrap:anywhere;">BNB_ADDRESS_PLACEHOLDER</span>
+                            <button type="button" class="app-btn" style="padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                                onclick="copyPaymentValue('walletBnb')">نسخ</button>
+                        </div>
+                        <button type="button" class="app-btn" style="margin-top:12px; padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                            onclick="selectPaymentTarget(this.parentNode)">اختيار هذا العنوان</button>
+                    </div>
+                    <div class="payment-target-card" data-method="Solana" data-target="SOLANA_ADDRESS_PLACEHOLDER"
+                        style="background:#222; border:1px solid rgba(255,215,0,0.25); border-radius:16px; padding:18px; text-align:right;">
+                        <div style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">Solana</div>
+                        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
+                            <span id="walletSolana"
+                                style="color:#fff; direction:ltr; text-align:left; overflow-wrap:anywhere;">SOLANA_ADDRESS_PLACEHOLDER</span>
+                            <button type="button" class="app-btn" style="padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                                onclick="copyPaymentValue('walletSolana')">نسخ</button>
+                        </div>
+                        <button type="button" class="app-btn" style="margin-top:12px; padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                            onclick="selectPaymentTarget(this.parentNode)">اختيار هذا العنوان</button>
+                    </div>
+                    <div class="payment-target-card" data-method="BSC" data-target="BSC_ADDRESS_PLACEHOLDER"
+                        style="background:#222; border:1px solid rgba(255,215,0,0.25); border-radius:16px; padding:18px; text-align:right;">
+                        <div style="color:#FFD700; font-size:1.1rem; margin-bottom:10px;">BSC</div>
+                        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
+                            <span id="walletBsc"
+                                style="color:#fff; direction:ltr; text-align:left; overflow-wrap:anywhere;">BSC_ADDRESS_PLACEHOLDER</span>
+                            <button type="button" class="app-btn" style="padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                                onclick="copyPaymentValue('walletBsc')">نسخ</button>
+                        </div>
+                        <button type="button" class="app-btn" style="margin-top:12px; padding:10px 18px; min-width:unset; font-size:0.95rem;"
+                            onclick="selectPaymentTarget(this.parentNode)">اختيار هذا العنوان</button>
+                    </div>
+                </div>
+                <div id="selectedPaymentTargetInfo" style="margin-top:18px; color:#FFD700; font-size:1rem; text-align:right;">
+                    لم يتم اختيار وسيلة الدفع بعد
+                </div>
+                <div
+                    style="margin-top:18px; background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:14px; padding:16px; color:#fff; line-height:1.8; text-align:right;">
+                    يرجى تصوير شاشة التحويل أو سجل العملية ورفعه لتأكيد الدفع
+                </div>
+                <div style="margin-top:18px; text-align:right;">
+                    <label for="paymentProofImage" style="display:block; color:#FFD700; margin-bottom:8px;">رفع صورة الإثبات</label>
+                    <input id="paymentProofImage" type="file" accept="image/*"
+                        style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(255,215,0,0.3); background:#111; color:#fff;">
+                </div>
+                <div style="margin-top:18px; text-align:center;">
+                    <button type="button" class="app-btn" onclick="submitManualPaymentRequest()">إرسال طلب التأكيد</button>
+                </div>
+            </div>
         </div>
         <div style="text-align:center; margin-top:10px;">
             <button class="app-btn" onclick="closeBuyScreen()">رجوع</button>
@@ -749,6 +843,121 @@
     <script>
         // --- prize address logic ---
         let isAdminSession = false;
+        let selectedPaymentMethod = '';
+        let selectedPaymentTarget = '';
+
+        function getCurrentPurchaseAmount() {
+            var amount = parseInt(document.getElementById('usdtAmount').value, 10);
+            return (!isNaN(amount) && amount > 0) ? amount : 0;
+        }
+
+        function getCurrentPurchaseQuantity() {
+            return getCurrentPurchaseAmount();
+        }
+
+        function updateManualPaymentSummary() {
+            var summary = document.getElementById('manualPaymentSummary');
+            if (!summary) return;
+            summary.textContent = 'قيمة الشراء: ' + getCurrentPurchaseAmount() + ' USDT | العدد: ' + getCurrentPurchaseQuantity();
+        }
+
+        function resetManualPaymentState() {
+            selectedPaymentMethod = '';
+            selectedPaymentTarget = '';
+            document.querySelectorAll('.payment-target-card').forEach(function (card) {
+                card.style.border = '1px solid rgba(255,215,0,0.25)';
+                card.style.boxShadow = 'none';
+            });
+            document.getElementById('manualPaymentPanel').style.display = 'none';
+            document.getElementById('selectedPaymentTargetInfo').textContent = 'لم يتم اختيار وسيلة الدفع بعد';
+            document.getElementById('paymentProofImage').value = '';
+            updateManualPaymentSummary();
+        }
+
+        function openManualPaymentPanel() {
+            if (!window.currentUser || !window.currentUser.email) {
+                alert('سجل الدخول أولاً');
+                return;
+            }
+            if (getCurrentPurchaseAmount() < 1) {
+                alert('يرجى تحديد قيمة شراء صحيحة');
+                return;
+            }
+            updateManualPaymentSummary();
+            document.getElementById('manualPaymentPanel').style.display = 'block';
+        }
+
+        function copyPaymentValue(elementId) {
+            var element = document.getElementById(elementId);
+            if (!element) return;
+            navigator.clipboard.writeText(element.textContent.trim()).catch(function () { });
+        }
+
+        function selectPaymentTarget(cardElement) {
+            if (!cardElement) return;
+            selectedPaymentMethod = cardElement.getAttribute('data-method') || '';
+            selectedPaymentTarget = cardElement.getAttribute('data-target') || '';
+            document.querySelectorAll('.payment-target-card').forEach(function (card) {
+                card.style.border = '1px solid rgba(255,215,0,0.25)';
+                card.style.boxShadow = 'none';
+            });
+            cardElement.style.border = '1px solid #FFD700';
+            cardElement.style.boxShadow = '0 0 0 1px rgba(255,215,0,0.35)';
+            document.getElementById('selectedPaymentTargetInfo').textContent = 'وسيلة الدفع المختارة: ' + selectedPaymentMethod;
+        }
+
+        function readProofImageAsDataUrl(file) {
+            return new Promise(function (resolve, reject) {
+                var reader = new FileReader();
+                reader.onload = function () { resolve(reader.result); };
+                reader.onerror = function () { reject(new Error('proof-read-failed')); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function submitManualPaymentRequest() {
+            if (!window.currentUser || !window.currentUser.email) {
+                alert('سجل الدخول أولاً');
+                return;
+            }
+            if (!selectedPaymentMethod || !selectedPaymentTarget) {
+                alert('يرجى اختيار وسيلة الدفع أولاً');
+                return;
+            }
+            var proofInput = document.getElementById('paymentProofImage');
+            var proofFile = proofInput && proofInput.files ? proofInput.files[0] : null;
+            if (!proofFile) {
+                alert('يرجى رفع صورة الإثبات');
+                return;
+            }
+
+            try {
+                var proofImage = await readProofImageAsDataUrl(proofFile);
+                const response = await fetch('/submit-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: window.currentUser.username || '',
+                        email: window.currentUser.email || '',
+                        amount: getCurrentPurchaseAmount(),
+                        quantity: getCurrentPurchaseQuantity(),
+                        paymentMethod: selectedPaymentMethod,
+                        paymentTarget: selectedPaymentTarget,
+                        proofImage: proofImage
+                    })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    alert(data.message || 'فشل إرسال طلب الدفع');
+                    return;
+                }
+
+                resetManualPaymentState();
+                alert('تم إرسال طلب التأكيد');
+            } catch (e) {
+                alert('حدث خطأ أثناء إرسال طلب الدفع');
+            }
+        }
 
         async function savePrizeAddress() {
             var input = document.getElementById('userPrizeAddress');
@@ -808,6 +1017,7 @@
             origShowBuyScreen.apply(this, arguments);
             setTimeout(loadPrizeAddress, 100);
             document.getElementById('prizeAddressSavedMsg').style.display = 'none';
+            resetManualPaymentState();
         }
         function showBuyScreen() {
             document.getElementById('mainApp').style.display = 'none';
@@ -818,6 +1028,7 @@
         function closeBuyScreen() {
             document.getElementById('buyScreen').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
+            resetManualPaymentState();
         }
         function updateBuyNumbers() {
             var val = document.getElementById('usdtAmount').value;
@@ -825,9 +1036,13 @@
             if (!val || isNaN(amount) || amount < 1) {
                 document.getElementById('numbersInfo').textContent = 'سيتم منح 0 رقم';
                 document.getElementById('paymentSection').style.display = 'none';
+                document.getElementById('paymentSection').style.height = '0';
+                resetManualPaymentState();
             } else {
                 document.getElementById('numbersInfo').textContent = 'سيتم منح ' + amount + ' رقم' + (amount > 1 ? '' : '');
                 document.getElementById('paymentSection').style.display = 'flex';
+                document.getElementById('paymentSection').style.height = 'auto';
+                updateManualPaymentSummary();
             }
         }
         function fixBuyAmount() {

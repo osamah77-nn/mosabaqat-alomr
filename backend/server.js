@@ -31,7 +31,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 const fs = require('fs');
 if (fs.existsSync('public')) {
@@ -41,7 +41,7 @@ if (fs.existsSync('public')) {
 // ربط MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'mosabaqat_alomr';
-let db, newsCollection, participantsCollection, winnerCollection;
+let db, newsCollection, participantsCollection, winnerCollection, paymentsCollection;
 
 async function connectDB() {
     try {
@@ -55,13 +55,15 @@ async function connectDB() {
         newsCollection = db.collection('news');
         participantsCollection = db.collection('participants');
         winnerCollection = db.collection('winner');
+        paymentsCollection = db.collection('payments');
 
         console.log('✅ Connected to MongoDB successfully');
         console.log('✅ Database:', DB_NAME);
         console.log('✅ Collections initialized:', {
             news: !!newsCollection,
             participants: !!participantsCollection,
-            winner: !!winnerCollection
+            winner: !!winnerCollection,
+            payments: !!paymentsCollection
         });
 
         return true;
@@ -345,6 +347,61 @@ app.post('/participants/prize-address', async (req, res) => {
     } catch (err) {
         console.error('❌ Prize address update error:', err);
         res.status(500).json({ message: 'فشل حفظ بيانات الاستلام' });
+    }
+});
+
+// حفظ طلب دفع يدوي جديد
+app.post('/submit-payment', async (req, res) => {
+    try {
+        const {
+            username,
+            email,
+            amount,
+            quantity,
+            paymentMethod,
+            paymentTarget,
+            proofImage
+        } = req.body || {};
+
+        if (!username || !email || !amount || !quantity || !paymentMethod || !paymentTarget || !proofImage) {
+            return res.status(400).json({ message: 'جميع بيانات الدفع مطلوبة' });
+        }
+
+        const paymentRequest = {
+            username: String(username).trim(),
+            email: String(email).trim().toLowerCase(),
+            amount: Number(amount),
+            quantity: Number(quantity),
+            paymentMethod: String(paymentMethod).trim(),
+            paymentTarget: String(paymentTarget).trim(),
+            proofImage: String(proofImage),
+            status: 'pending',
+            createdAt: new Date()
+        };
+
+        if (
+            !paymentRequest.username ||
+            !paymentRequest.email ||
+            !Number.isFinite(paymentRequest.amount) ||
+            paymentRequest.amount < 1 ||
+            !Number.isFinite(paymentRequest.quantity) ||
+            paymentRequest.quantity < 1 ||
+            !paymentRequest.paymentMethod ||
+            !paymentRequest.paymentTarget ||
+            !paymentRequest.proofImage
+        ) {
+            return res.status(400).json({ message: 'بيانات الدفع غير صالحة' });
+        }
+
+        const result = await paymentsCollection.insertOne(paymentRequest);
+        res.status(201).json({
+            message: 'تم حفظ طلب الدفع',
+            id: result.insertedId,
+            status: paymentRequest.status
+        });
+    } catch (err) {
+        console.error('❌ Submit payment error:', err);
+        res.status(500).json({ message: 'فشل حفظ طلب الدفع' });
     }
 });
 
