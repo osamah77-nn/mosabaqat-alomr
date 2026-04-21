@@ -73,6 +73,7 @@ async function connectDB() {
 
 // بيانات المطور (admin) الثابتة
 const ADMIN_EMAIL = "developer@mosabaqa.com";
+const ADMIN_PASSWORD = "devpass2026";
 
 // جميع المسارات (routes)
 
@@ -186,6 +187,12 @@ app.delete('/winner', async (req, res) => {
 // نقطة إرجاع جميع المشاركين (للمطور)
 app.get('/participants', async (req, res) => {
     try {
+        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
+        const adminPassword = String(req.headers['x-admin-password'] || '');
+        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
+            return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى قائمة المشاركين' });
+        }
+
         console.log('👥 Fetching participants...');
         const participants = await participantsCollection.find().toArray();
         console.log(`✅ Found ${participants.length} participants`);
@@ -194,7 +201,8 @@ app.get('/participants', async (req, res) => {
             username: p.username,
             family: p.family || '',
             email: p.email,
-            registrationNumber: p.registrationNumber,
+            registrationNumber: p.registrationNumber || null,
+            prizeAddress: p.prizeAddress || '',
             role: p.role,
             createdAt: p.createdAt
         })));
@@ -237,7 +245,8 @@ app.post('/login', async (req, res) => {
             username: user.username,
             family: user.family || '',
             email: user.email,
-            registrationNumber: user.registrationNumber,
+            registrationNumber: user.registrationNumber || null,
+            prizeAddress: user.prizeAddress || '',
             role
         });
     } catch (err) {
@@ -246,7 +255,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// إنشاء مستخدم جديد برقم مشاركة عشوائي وحفظه مع تشفير كلمة المرور
+// إنشاء مستخدم جديد بدون رقم مشاركة، ويتم منحه لاحقاً عبر مسار مخصص
 app.post('/register', async (req, res) => {
     try {
         console.log('📝 Register request received:', req.body);
@@ -262,6 +271,10 @@ app.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'يرجى تعبئة جميع الحقول' });
         }
 
+        if (String(password).length < 8) {
+            return res.status(400).json({ message: 'كلمة المرور يجب أن تكون 8 أحرف أو أرقام على الأقل' });
+        }
+
         const exists = await participantsCollection.findOne({
             email: { $regex: new RegExp(`^${email}$`, 'i') }
         });
@@ -272,7 +285,6 @@ app.post('/register', async (req, res) => {
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
-        const registrationNumber = Math.floor(100000 + Math.random() * 900000);
         const role = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
 
         const newParticipant = {
@@ -280,7 +292,7 @@ app.post('/register', async (req, res) => {
             family,
             email,
             passwordHash,
-            registrationNumber,
+            prizeAddress: '',
             role,
             createdAt: new Date()
         };
@@ -290,14 +302,49 @@ app.post('/register', async (req, res) => {
             username,
             family,
             email,
-            registrationNumber,
             insertedId: result.insertedId
         });
 
-        res.status(201).json({ username, family, email, registrationNumber, role });
+        res.status(201).json({ username, family, email, registrationNumber: null, prizeAddress: '', role });
     } catch (err) {
         console.error('❌ Register error:', err);
         res.status(500).json({ message: 'حدث خطأ أثناء التسجيل' });
+    }
+});
+
+// حفظ عنوان/معرّف استلام الجائزة للمستخدم
+app.post('/participants/prize-address', async (req, res) => {
+    try {
+        console.log('🎁 Prize address update request:', {
+            email: req.body.email,
+            hasPrizeAddress: !!req.body.prizeAddress
+        });
+
+        const { email, prizeAddress } = req.body;
+        if (!email || !prizeAddress) {
+            return res.status(400).json({ message: 'البريد الإلكتروني وبيانات الاستلام مطلوبة' });
+        }
+
+        const updateResult = await participantsCollection.updateOne(
+            { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+            { $set: { prizeAddress: String(prizeAddress).trim() } }
+        );
+
+        if (updateResult.matchedCount === 0) {
+            return res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+
+        const updatedUser = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') }
+        });
+
+        res.json({
+            message: 'تم حفظ بيانات الاستلام بنجاح',
+            prizeAddress: updatedUser?.prizeAddress || ''
+        });
+    } catch (err) {
+        console.error('❌ Prize address update error:', err);
+        res.status(500).json({ message: 'فشل حفظ بيانات الاستلام' });
     }
 });
 
