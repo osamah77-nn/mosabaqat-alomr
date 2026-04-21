@@ -77,6 +77,60 @@ async function connectDB() {
 const ADMIN_EMAIL = "developer@mosabaqa.com";
 const ADMIN_PASSWORD = "devpass2026";
 
+function getParticipantNumbers(participant) {
+    if (Array.isArray(participant?.ticketNumbers)) {
+        return participant.ticketNumbers
+            .map(n => String(n).trim())
+            .filter(Boolean);
+    }
+
+    if (participant?.registrationNumber) {
+        return [String(participant.registrationNumber).trim()].filter(Boolean);
+    }
+
+    return [];
+}
+
+function buildParticipantResponse(participant) {
+    const ticketNumbers = getParticipantNumbers(participant);
+    return {
+        id: participant._id,
+        username: participant.username,
+        family: participant.family || '',
+        email: participant.email,
+        registrationNumber: ticketNumbers[0] || null,
+        ticketNumbers,
+        prizeAddress: participant.prizeAddress || '',
+        messages: Array.isArray(participant.messages) ? participant.messages : [],
+        role: participant.role,
+        createdAt: participant.createdAt
+    };
+}
+
+async function generateUniqueTicketNumbers(count) {
+    const participants = await participantsCollection.find(
+        {},
+        { projection: { registrationNumber: 1, ticketNumbers: 1 } }
+    ).toArray();
+
+    const usedNumbers = new Set();
+    participants.forEach(participant => {
+        getParticipantNumbers(participant).forEach(number => usedNumbers.add(number));
+    });
+
+    const generated = [];
+    while (generated.length < count) {
+        const candidate = String(Math.floor(100000000 + Math.random() * 900000000));
+        if (usedNumbers.has(candidate)) {
+            continue;
+        }
+        usedNumbers.add(candidate);
+        generated.push(candidate);
+    }
+
+    return generated;
+}
+
 // جميع المسارات (routes)
 
 // الصفحة الرئيسية
@@ -198,16 +252,7 @@ app.get('/participants', async (req, res) => {
         console.log('👥 Fetching participants...');
         const participants = await participantsCollection.find().toArray();
         console.log(`✅ Found ${participants.length} participants`);
-        res.json(participants.map(p => ({
-            id: p._id,
-            username: p.username,
-            family: p.family || '',
-            email: p.email,
-            registrationNumber: p.registrationNumber || null,
-            prizeAddress: p.prizeAddress || '',
-            role: p.role,
-            createdAt: p.createdAt
-        })));
+        res.json(participants.map(buildParticipantResponse));
     } catch (err) {
         console.error('❌ Participants fetch error:', err);
         res.status(500).json({ message: 'فشل جلب المشاركين' });
@@ -228,7 +273,6 @@ app.get('/payments', async (req, res) => {
                 {},
                 {
                     projection: {
-                        _id: 0,
                         username: 1,
                         email: 1,
                         amount: 1,
@@ -237,17 +281,197 @@ app.get('/payments', async (req, res) => {
                         paymentTarget: 1,
                         proofImage: 1,
                         status: 1,
-                        createdAt: 1
+                        createdAt: 1,
+                        rejectionReason: 1,
+                        grantedCount: 1
                     }
                 }
             )
             .sort({ createdAt: -1 })
             .toArray();
 
-        res.json(payments);
+        res.json(payments.map(payment => ({
+            id: String(payment._id),
+            username: payment.username,
+            email: payment.email,
+            amount: payment.amount,
+            quantity: payment.quantity,
+            paymentMethod: payment.paymentMethod,
+            paymentTarget: payment.paymentTarget,
+            proofImage: payment.proofImage,
+            status: payment.status,
+            createdAt: payment.createdAt,
+            rejectionReason: payment.rejectionReason || '',
+            grantedCount: payment.grantedCount || 0
+        })));
     } catch (err) {
         console.error('❌ Payments fetch error:', err);
         res.status(500).json({ message: 'فشل جلب طلبات الدفع' });
+    }
+});
+
+app.post('/payments/:id/approve', async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'معرف طلب الدفع غير صالح' });
+        }
+
+        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
+        const adminPassword = String(req.headers['x-admin-password'] || '');
+        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
+            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات الدفع' });
+        }
+
+        const ticketCount = Number(req.body?.ticketCount);
+        if (!Number.isInteger(ticketCount) || ticketCount < 1) {
+            return res.status(400).json({ message: 'عدد الأرقام غير صالح' });
+        }
+
+        const payment = await paymentsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        if (!payment) {
+            return res.status(404).json({ message: 'طلب الدفع غير موجود' });
+        }
+
+        if (payment.status !== 'pending') {
+            return res.status(400).json({ message: 'تمت معالجة هذا الطلب مسبقاً' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${payment.email}$`, 'i') }
+        });
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم المرتبط بالطلب غير موجود' });
+        }
+
+        const newTicketNumbers = await generateUniqueTicketNumbers(ticketCount);
+        const currentNumbers = getParticipantNumbers(participant);
+        const updatedNumbers = [...currentNumbers, ...newTicketNumbers];
+        const approvalMessage = `مبروك، تم تأكيد طلبك وتم منحك عدد ${ticketCount} من الأرقام، وقد دخلت في السحب بنجاح`;
+
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            {
+                $set: {
+                    ticketNumbers: updatedNumbers,
+                    registrationNumber: updatedNumbers[0] || null
+                },
+                $push: {
+                    messages: {
+                        id: new ObjectId().toString(),
+                        type: 'approved',
+                        text: approvalMessage,
+                        createdAt: new Date()
+                    }
+                }
+            }
+        );
+
+        await paymentsCollection.updateOne(
+            { _id: payment._id },
+            {
+                $set: {
+                    status: 'approved',
+                    grantedCount: ticketCount,
+                    grantedNumbers: newTicketNumbers,
+                    approvedAt: new Date()
+                }
+            }
+        );
+
+        res.json({
+            message: 'تم قبول الطلب ومنح الأرقام بنجاح',
+            ticketNumbers: newTicketNumbers
+        });
+    } catch (err) {
+        console.error('❌ Payment approval error:', err);
+        res.status(500).json({ message: 'فشل قبول طلب الدفع' });
+    }
+});
+
+app.post('/payments/:id/reject', async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'معرف طلب الدفع غير صالح' });
+        }
+
+        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
+        const adminPassword = String(req.headers['x-admin-password'] || '');
+        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
+            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات الدفع' });
+        }
+
+        const reason = String(req.body?.reason || '').trim();
+        if (!reason) {
+            return res.status(400).json({ message: 'سبب الرفض مطلوب' });
+        }
+
+        const payment = await paymentsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        if (!payment) {
+            return res.status(404).json({ message: 'طلب الدفع غير موجود' });
+        }
+
+        if (payment.status !== 'pending') {
+            return res.status(400).json({ message: 'تمت معالجة هذا الطلب مسبقاً' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${payment.email}$`, 'i') }
+        });
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم المرتبط بالطلب غير موجود' });
+        }
+
+        await paymentsCollection.updateOne(
+            { _id: payment._id },
+            {
+                $set: {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectedAt: new Date()
+                }
+            }
+        );
+
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            {
+                $push: {
+                    messages: {
+                        id: new ObjectId().toString(),
+                        type: 'rejected',
+                        text: `تم رفض طلبك. السبب: ${reason}`,
+                        createdAt: new Date()
+                    }
+                }
+            }
+        );
+
+        res.json({ message: 'تم رفض الطلب بنجاح' });
+    } catch (err) {
+        console.error('❌ Payment rejection error:', err);
+        res.status(500).json({ message: 'فشل رفض طلب الدفع' });
+    }
+});
+
+app.get('/user-profile', async (req, res) => {
+    try {
+        const email = String(req.query.email || '').trim();
+        if (!email) {
+            return res.status(400).json({ message: 'البريد الإلكتروني مطلوب' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+
+        res.json(buildParticipantResponse(participant));
+    } catch (err) {
+        console.error('❌ User profile fetch error:', err);
+        res.status(500).json({ message: 'فشل جلب بيانات المستخدم' });
     }
 });
 
@@ -284,8 +508,10 @@ app.post('/login', async (req, res) => {
             username: user.username,
             family: user.family || '',
             email: user.email,
-            registrationNumber: user.registrationNumber || null,
+            registrationNumber: getParticipantNumbers(user)[0] || null,
+            ticketNumbers: getParticipantNumbers(user),
             prizeAddress: user.prizeAddress || '',
+            messages: Array.isArray(user.messages) ? user.messages : [],
             role
         });
     } catch (err) {
@@ -344,7 +570,16 @@ app.post('/register', async (req, res) => {
             insertedId: result.insertedId
         });
 
-        res.status(201).json({ username, family, email, registrationNumber: null, prizeAddress: '', role });
+        res.status(201).json({
+            username,
+            family,
+            email,
+            registrationNumber: null,
+            ticketNumbers: [],
+            prizeAddress: '',
+            messages: [],
+            role
+        });
     } catch (err) {
         console.error('❌ Register error:', err);
         res.status(500).json({ message: 'حدث خطأ أثناء التسجيل' });
