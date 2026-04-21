@@ -1205,8 +1205,6 @@
                 </div>
             </div>
 
-            <!-- جدول بيانات المستخدمين في الأسفل -->
-            <div class="app-content" id="adminUsersTable"></div>
             <div
                 style="margin: 40px auto 0; max-width: 1100px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
                 <h3 style="color:#FFD700; margin-bottom:18px; text-align:center;">طلبات تأكيد الدفع</h3>
@@ -1214,7 +1212,16 @@
                     style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
                     <div style="color:#fff;text-align:center;">جاري تحميل طلبات الدفع...</div>
                 </div>
+                <div style="margin-top:26px;">
+                    <h4 style="color:#FFD700; margin-bottom:14px; text-align:center;">الطلبات المعالجة</h4>
+                    <div id="adminProcessedPaymentsTable"
+                        style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                        <div style="color:#fff;text-align:center;">لا توجد طلبات معالجة حالياً.</div>
+                    </div>
+                </div>
             </div>
+            <!-- جدول بيانات المستخدمين في الأسفل -->
+            <div class="app-content" id="adminUsersTable"></div>
             <script>
                 // قائمة جميع الأرقام الممنوحة مع اسم المستخدم بجانب كل رقم
                 function toggleAllTicketsList() {
@@ -1609,8 +1616,10 @@
 
 
         const CURRENT_USER_STORAGE_KEY = 'currentUserSession';
+        const USER_MESSAGE_POPUP_STORAGE_KEY = 'seenUserMessagePopups';
         let participantsCache = [];
         let paymentsCache = [];
+        let adminAutoRefreshTimer = null;
 
         async function fetchParticipants() {
             if (!isAdminSession) {
@@ -1695,6 +1704,71 @@
             }).join('');
         }
 
+        function getSeenUserMessageMap() {
+            try {
+                return JSON.parse(localStorage.getItem(USER_MESSAGE_POPUP_STORAGE_KEY) || '{}');
+            } catch {
+                return {};
+            }
+        }
+
+        function markUserMessageAsSeen(email, messageId) {
+            if (!email || !messageId) return;
+            const seenMap = getSeenUserMessageMap();
+            const emailKey = String(email).toLowerCase();
+            const currentSeen = Array.isArray(seenMap[emailKey]) ? seenMap[emailKey] : [];
+            if (!currentSeen.includes(messageId)) {
+                currentSeen.push(messageId);
+                seenMap[emailKey] = currentSeen;
+                localStorage.setItem(USER_MESSAGE_POPUP_STORAGE_KEY, JSON.stringify(seenMap));
+            }
+        }
+
+        function showNewUserMessagePopup(email, messages) {
+            if (!email || !Array.isArray(messages) || !messages.length) {
+                return;
+            }
+
+            const emailKey = String(email).toLowerCase();
+            const seenMap = getSeenUserMessageMap();
+            const seenIds = Array.isArray(seenMap[emailKey]) ? seenMap[emailKey] : [];
+            const unseenMessages = messages.filter(function (message) {
+                return message && message.id && !seenIds.includes(message.id);
+            });
+
+            if (!unseenMessages.length) {
+                return;
+            }
+
+            const latestMessage = unseenMessages[unseenMessages.length - 1];
+            unseenMessages.forEach(function (message) {
+                if (message && message.id) {
+                    markUserMessageAsSeen(emailKey, message.id);
+                }
+            });
+            alert(latestMessage.text || '');
+        }
+
+        function startAdminAutoRefresh() {
+            if (adminAutoRefreshTimer) {
+                clearInterval(adminAutoRefreshTimer);
+            }
+            adminAutoRefreshTimer = setInterval(function () {
+                if (!isAdminSession || document.getElementById('adminPage').style.display !== 'block') {
+                    return;
+                }
+                renderAdminUsers();
+                renderPaymentRequests();
+            }, 5000);
+        }
+
+        function stopAdminAutoRefresh() {
+            if (adminAutoRefreshTimer) {
+                clearInterval(adminAutoRefreshTimer);
+                adminAutoRefreshTimer = null;
+            }
+        }
+
         async function refreshCurrentUserData() {
             if (!window.currentUser || !window.currentUser.email) {
                 return null;
@@ -1718,8 +1792,13 @@
                     role: data.role || window.currentUser.role || 'user'
                 };
                 saveCurrentUser(updatedUser);
-                renderUserMessages(updatedUser.messages, 'userMessagesBox');
+                const welcomeMessagesBox = document.getElementById('userMessagesBox');
+                if (welcomeMessagesBox) {
+                    welcomeMessagesBox.style.display = 'none';
+                    welcomeMessagesBox.innerHTML = '';
+                }
                 renderUserMessages(updatedUser.messages, 'ticketsMessagesBox');
+                showNewUserMessagePopup(updatedUser.email, updatedUser.messages);
                 return updatedUser;
             } catch (e) {
                 return window.currentUser;
@@ -1733,11 +1812,13 @@
             document.getElementById('adminPage').style.display = 'block';
             renderAdminUsers();
             renderPaymentRequests();
+            startAdminAutoRefresh();
             fetchNews(); // عند دخول المطور، جلب الأخبار أيضاً
         }
 
         function logoutAdmin() {
             isAdminSession = false;
+            stopAdminAutoRefresh();
             document.getElementById('adminPage').style.display = 'none';
             document.getElementById('landingPage').style.display = 'flex';
             // إزالة المستخدم الحالي عند تسجيل الخروج
@@ -1776,23 +1857,20 @@
         }
 
         async function renderPaymentRequests() {
-            const container = document.getElementById('adminPaymentsTable');
-            if (!container) return;
+            const activeContainer = document.getElementById('adminPaymentsTable');
+            const processedContainer = document.getElementById('adminProcessedPaymentsTable');
+            if (!activeContainer || !processedContainer) return;
 
             let payments = [];
             try {
                 payments = await fetchPayments();
             } catch (e) {
-                container.innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل طلبات الدفع.</div>';
+                activeContainer.innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل طلبات الدفع.</div>';
+                processedContainer.innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل سجل الطلبات.</div>';
                 return;
             }
 
-            if (!payments.length) {
-                container.innerHTML = '<div style="color:#fff;text-align:center;">لا توجد طلبات دفع حالياً.</div>';
-                return;
-            }
-
-            container.innerHTML = payments.map(function (payment) {
+            function renderPaymentCard(payment) {
                 const statusText = payment.status === 'pending'
                     ? 'قيد الانتظار'
                     : payment.status === 'approved'
@@ -1830,7 +1908,22 @@
                         ${actionsHtml}
                     </div>
                 `;
-            }).join('');
+            }
+
+            const activePayments = payments.filter(function (payment) {
+                return payment.status === 'pending';
+            });
+            const processedPayments = payments.filter(function (payment) {
+                return payment.status === 'approved' || payment.status === 'rejected';
+            });
+
+            activeContainer.innerHTML = activePayments.length
+                ? activePayments.map(renderPaymentCard).join('')
+                : '<div style="color:#fff;text-align:center;">لا توجد طلبات معلقة حالياً.</div>';
+
+            processedContainer.innerHTML = processedPayments.length
+                ? processedPayments.map(renderPaymentCard).join('')
+                : '<div style="color:#fff;text-align:center;">لا توجد طلبات معالجة حالياً.</div>';
         }
 
         // نافذة منبثقة لعرض أرقام المستخدم للمطور
