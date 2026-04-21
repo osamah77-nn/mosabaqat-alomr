@@ -740,53 +740,13 @@
             </div>
         </div>
         <div id="paymentSection"
-            style="text-align:center; margin-top:18px; display:none; flex-direction:column; align-items:center;">
-            <button class="app-btn" style="margin-bottom:12px;" onclick="payWithBinance()">الدفع (USDT)</button>
+            style="text-align:center; margin-top:0; height:0; display:none; flex-direction:column; align-items:center;">
         </div>
         <div style="text-align:center; margin-top:10px;">
             <button class="app-btn" onclick="closeBuyScreen()">رجوع</button>
         </div>
     </div>
-    <!-- صفحة الدفع -->
-    <div id="paymentPage" class="main-app"
-        style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh;">
-        <div
-            style="max-width:420px; width:100%; margin:40px auto 24px auto; background:rgba(0,0,0,0.92); border-radius:22px; padding:38px 20px; box-shadow:0 10px 30px rgba(255,215,0,0.10); display:flex; flex-direction:column; align-items:center;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Binance_Logo.png" alt="Binance Logo"
-                style="width:110px; margin-bottom:18px;">
-            <h2 style="color:#FFD700; margin-bottom:18px;">اختر وسيلة الدفع</h2>
-            <button class="app-btn"
-                style="background:#F3BA2F; color:#222; font-weight:bold; font-size:1.15rem; padding:14px 32px; border-radius:14px; margin-bottom:18px;"
-                onclick="goToBinance()">Binance</button>
-            <div style="margin-top:18px;">
-                <button class="app-btn" onclick="backToBuyScreen()">رجوع</button>
-            </div>
-        </div>
-    </div>
     <script>
-        // --- ربط زر الدفع الحقيقي بمنظومة Binance Pay عبر backend ---
-        async function payWithBinance() {
-            var amount = document.getElementById('usdtAmount').value;
-            if (!amount || isNaN(amount) || Number(amount) < 1) {
-                alert('يرجى إدخال مبلغ صحيح');
-                return;
-            }
-            try {
-                const res = await fetch('/create-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: Number(amount) })
-                });
-                const data = await res.json();
-                if (res.ok && data.payment_url) {
-                    window.open(data.payment_url, '_blank');
-                } else {
-                    alert('تعذر إنشاء رابط الدفع: ' + (data.error || 'خطأ غير معروف'));
-                }
-            } catch (e) {
-                alert('حدث خطأ أثناء الاتصال بخادم الدفع.');
-            }
-        }
         // --- prize address logic ---
         function getPrizeAddressKey() {
             if (window.currentUser && window.currentUser.email) {

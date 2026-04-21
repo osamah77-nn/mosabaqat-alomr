@@ -4,7 +4,6 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 const { MongoClient, ObjectId } = require('mongodb');
-const { createBinancePayOrder } = require('./binancePay');
 
 // تعريف التطبيق مباشرة بعد الاستيراد
 const app = express();
@@ -80,23 +79,6 @@ const ADMIN_EMAIL = "developer@mosabaqa.com";
 // الصفحة الرئيسية
 app.get('/', (req, res) => {
     res.send('✅ Server Mosabaqat Alomr Running - All Systems Operational');
-});
-
-// Endpoint: POST /create-payment
-app.post('/create-payment', async (req, res) => {
-    try {
-        console.log('💳 Payment request:', req.body);
-        const { amount } = req.body;
-        if (!amount || isNaN(amount) || amount <= 0) {
-            return res.status(400).json({ error: 'Invalid amount' });
-        }
-        const paymentUrl = await createBinancePayOrder(amount);
-        console.log('✅ Payment URL created');
-        res.json({ payment_url: paymentUrl });
-    } catch (err) {
-        console.error('❌ Payment error:', err);
-        res.status(500).json({ error: err.message || 'Payment creation failed' });
-    }
 });
 
 // إضافة خبر جديد (POST /news)
