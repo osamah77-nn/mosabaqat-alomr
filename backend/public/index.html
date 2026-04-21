@@ -894,22 +894,11 @@
 
         // عند الضغط على الدفع (اختبار)
         function handleFakePayment() {
-            // في الوضع التجريبي: إذا لم يكن هناك مستخدم، أنشئ حساب مؤقت تلقائيًا
+            // في الوضع التجريبي: إذا لم يكن هناك مستخدم، أنشئ حساب زائر مؤقت داخل الجلسة الحالية فقط
             if (!window.currentUser) {
-                // إذا لم يكن هناك مستخدم حقيقي في localStorage، أنشئ حساب زائر مؤقت فقط في window وليس في localStorage
-                let cuLS = localStorage.getItem('currentUser');
-                if (cuLS) {
-                    window.currentUser = JSON.parse(cuLS);
-                } else {
-                    let guestEmail = 'guest_' + Date.now() + '@test.com';
-                    let guestUser = { username: 'زائر', family: '', email: guestEmail, password: '' };
-                    window.currentUser = guestUser;
-                    // حفظه في المستخدمين
-                    let users = getUsers();
-                    users.push(guestUser);
-                    saveUsers(users);
-                    // لا تحفظه في localStorage حتى لا يراه الجميع
-                }
+                let guestEmail = 'guest_' + Date.now() + '@test.com';
+                let guestUser = { username: 'زائر', family: '', email: guestEmail, role: 'guest' };
+                saveCurrentUser(guestUser);
             }
             var val = document.getElementById('usdtAmount').value;
             var amount = parseInt(val);
@@ -924,9 +913,9 @@
             userTickets = userTickets.concat(newNumbers);
             saveUserTickets(window.currentUser.email, userTickets);
             closeBuyScreen();
-            // إذا كان المستخدم حقيقي (مسجل دخول)، حدث currentUser في localStorage
+            // إذا كان المستخدم حقيقي (مسجل دخول)، حافظ على الجلسة الحالية فقط
             if (window.currentUser && window.currentUser.email && !window.currentUser.email.startsWith('guest_')) {
-                localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
+                saveCurrentUser(window.currentUser);
             }
             // عرض الأرقام مباشرة بعد الدفع
             setTimeout(function () {
@@ -1020,15 +1009,13 @@
         </div>
         // تصدير جميع الأرقام الممنوحة مع بيانات أصحابها إلى ملف CSV
         function exportAllTicketsCSV() {
-        const users = getUsers();
+        const users = participantsCache;
         let rows = [['رقم السحب','اسم المستخدم','اسم العائلة','البريد الإلكتروني']];
         users.forEach(u => {
-        const tickets = getUserTickets(u.email);
-        if (tickets.length === 0) {
-        // حتى لو لم يكن لديه أرقام، أضف صف باسم المستخدم والبريد بدون رقم
+        if (!u.registrationNumber) {
         rows.push(['', u.username, u.family || '', u.email]);
         } else {
-        for (let i = 0; i < tickets.length; i++) { rows.push([tickets[i], u.username, u.family || '' , u.email]); } }
+        rows.push([u.registrationNumber, u.username, u.family || '' , u.email]); }
             }); let csvContent=rows.map(r=> '"'+r.join('","')+'"').join('\n');
             // إنشاء ملف وتحميله
             const blob = new Blob([csvContent], {type: 'text/csv'});
@@ -1091,15 +1078,15 @@
                     }
                 }
 
-                function renderAllTicketsList() {
-                    const users = getUsers();
+                async function renderAllTicketsList() {
+                    const users = await fetchParticipants();
                     let rows = [];
                     users.forEach(u => {
-                        const tickets = getUserTickets(u.email);
-                        if (tickets.length === 0) return;
-                        for (let i = 0; i < tickets.length; i++) {
-                            rows.push({ number: tickets[i], name: u.username + (u.family ? ' ' + u.family : '') });
-                        }
+                        if (!u.registrationNumber) return;
+                        rows.push({
+                            number: String(u.registrationNumber),
+                            name: u.username + (u.family ? ' ' + u.family : '')
+                        });
                     });
                     if (rows.length === 0) {
                         document.getElementById('allTicketsList').innerHTML = '<div style="color:#FFD700;text-align:center;">لا توجد أرقام ممنوحة بعد.</div>';
@@ -1477,6 +1464,36 @@
         }
 
 
+        const CURRENT_USER_STORAGE_KEY = 'currentUserSession';
+        let participantsCache = [];
+
+        async function fetchParticipants() {
+            const response = await fetch('/participants');
+            if (!response.ok) {
+                throw new Error('فشل جلب المشاركين');
+            }
+            const users = await response.json();
+            participantsCache = Array.isArray(users) ? users : [];
+            return participantsCache;
+        }
+
+        function getParticipantByEmail(email) {
+            return participantsCache.find(u => (u.email || '').toLowerCase() === (email || '').toLowerCase()) || null;
+        }
+
+        function saveCurrentUser(user) {
+            currentUser = user ? { ...user } : null;
+            window.currentUser = currentUser;
+
+            try {
+                if (currentUser) {
+                    sessionStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(currentUser));
+                } else {
+                    sessionStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+                }
+            } catch { }
+        }
+
         function showAdminPage() {
             document.getElementById('landingPage').style.display = 'none';
             document.getElementById('mainApp').style.display = 'none';
@@ -1489,20 +1506,22 @@
             document.getElementById('adminPage').style.display = 'none';
             document.getElementById('landingPage').style.display = 'flex';
             // إزالة المستخدم الحالي عند تسجيل الخروج
-            window.currentUser = null;
-            localStorage.removeItem('currentUser');
+            saveCurrentUser(null);
             // إعادة تفعيل ظهور رسالة الفائز عند تسجيل الدخول من جديد
             winnerPopupClosed = false;
             lastWinnerId = null;
         }
 
-        function renderAdminUsers() {
-            const users = getUsers();
-            let totalTickets = 0;
-            users.forEach(u => {
-                const t = getUserTickets(u.email);
-                totalTickets += t.length;
-            });
+        async function renderAdminUsers() {
+            let users = [];
+            try {
+                users = await fetchParticipants();
+            } catch (e) {
+                document.getElementById('adminUsersTable').innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل المستخدمين.</div>';
+                return;
+            }
+
+            let totalTickets = users.filter(u => u.registrationNumber).length;
             let html = '<div style="margin-bottom:18px;text-align:center;font-size:1.2rem;color:#FFD700;">إجمالي عدد الأرقام الممنوحة: <span style="color:#fff;font-weight:bold;">' + totalTickets + '</span></div>';
             html += '<table style="width:100%;color:#fff;text-align:center;border-collapse:collapse;">';
             html += '<tr style="background:#FFD700;color:#222;"><th>#</th><th>الاسم</th><th>اسم العائلة</th><th>البريد الإلكتروني</th><th>كلمة المرور</th><th>عنوان/ID الجائزة</th><th>تفاصيل</th></tr>';
@@ -1514,7 +1533,7 @@
                     <td>${u.username}</td>
                     <td>${u.family || ''}</td>
                     <td>${u.email}</td>
-                    <td>${u.password}</td>
+                    <td>مشفرة</td>
                     <td style="color:#FFD700;direction:ltr;text-align:left;max-width:180px;overflow-wrap:anywhere;">${prizeVal ? prizeVal : '<span style=\'color:#888\'>غير مدخل</span>'}</td>
                     <td><button onclick="showUserTicketsAdmin('${u.email.replace(/'/g, '')}')" style="background:#FFD700;color:#222;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1rem;">عرض الأرقام</button></td>
                 </tr>`;
@@ -1524,22 +1543,19 @@
         }
 
         // نافذة منبثقة لعرض أرقام المستخدم للمطور
-        function showUserTicketsAdmin(email) {
-            const users = getUsers();
-            const user = users.find(u => u.email === email);
-            const tickets = getUserTickets(email);
+        async function showUserTicketsAdmin(email) {
+            let user = getParticipantByEmail(email);
+            if (!user) {
+                try {
+                    await fetchParticipants();
+                    user = getParticipantByEmail(email);
+                } catch (e) { }
+            }
+
             let msg = `<div style='text-align:right;direction:rtl;'>`;
             msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>الاسم:</b> ${user ? user.username : ''} <b>اسم العائلة:</b> ${user ? user.family : ''}</div>`;
             msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>البريد الإلكتروني:</b> ${email}</div>`;
-            msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>عدد الأرقام:</b> <span style='color:#FFD700'>${tickets.length}</span></div>`;
-            if (tickets.length) {
-                msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>الأرقام:</b></div>`;
-                msg += `<div style='background:#222;color:#FFD700;padding:10px 12px;border-radius:10px;max-height:220px;overflow:auto;font-size:1.05rem;line-height:2;'>`;
-                for (let i = 0; i < tickets.length; i++) {
-                    msg += (i + 1) + '- ' + tickets[i] + '<br>';
-                }
-                msg += `</div>`;
-            }
+            msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>رقم المشاركة:</b> <span style='color:#FFD700'>${user && user.registrationNumber ? user.registrationNumber : 'غير متوفر'}</span></div>`;
             msg += `</div>`;
             // نافذة منبثقة بسيطة
             const popup = document.createElement('div');
@@ -1552,10 +1568,10 @@
             document.body.appendChild(popup);
         }
 
-        // تحميل المستخدم الحالي من localStorage عند بدء الصفحة
+        // تحميل المستخدم الحالي من sessionStorage عند بدء الصفحة
         let currentUser = null;
         try {
-            const cu = localStorage.getItem('currentUser');
+            const cu = sessionStorage.getItem(CURRENT_USER_STORAGE_KEY);
             if (cu) {
                 currentUser = JSON.parse(cu);
                 window.currentUser = currentUser;
@@ -1565,7 +1581,7 @@
             }
         } catch { currentUser = null; window.currentUser = null; }
 
-        function login(event) {
+        async function login(event) {
             event.preventDefault();
             const email = document.getElementById('login-email').value.trim().toLowerCase();
             const password = document.getElementById('login-password').value;
@@ -1575,20 +1591,41 @@
                 showAdminPage();
                 return;
             }
-            const users = getUsers();
-            const user = users.find(u => u.email === email && u.password === password);
-            if (!user) {
-                alert('بيانات الدخول غير صحيحة. حاول مرة أخرى.');
-                return;
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    alert(data.message || 'بيانات الدخول غير صحيحة. حاول مرة أخرى.');
+                    return;
+                }
+
+                const user = {
+                    username: data.username,
+                    family: data.family || '',
+                    email: data.email || email,
+                    registrationNumber: data.registrationNumber || null,
+                    role: data.role || 'user'
+                };
+
+                saveCurrentUser(user);
+                closeModal('loginModal');
+                if (user.role === 'admin') {
+                    showAdminPage();
+                } else {
+                    showMainApp();
+                }
+            } catch (e) {
+                alert('حدث خطأ أثناء تسجيل الدخول.');
             }
-            currentUser = user;
-            window.currentUser = user;
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            closeModal('loginModal');
-            showMainApp();
         }
 
-        function register(event) {
+        async function register(event) {
             event.preventDefault();
             const username = document.getElementById('reg-username').value.trim();
             const family = document.getElementById('reg-family').value.trim();
@@ -1598,20 +1635,34 @@
                 alert('يرجى تعبئة جميع الحقول.');
                 return;
             }
-            const users = getUsers();
-            if (users.some(u => u.email === email)) {
-                alert('هذا البريد الإلكتروني موجود بالفعل.');
-                return;
+
+            try {
+                const res = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, family, email, password })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    alert(data.message || 'فشل إنشاء الحساب.');
+                    return;
+                }
+
+                await fetchParticipants().catch(() => []);
+                saveCurrentUser({
+                    username: data.username,
+                    family: data.family || family,
+                    email: data.email || email,
+                    registrationNumber: data.registrationNumber || null,
+                    role: data.role || 'user'
+                });
+                alert(`تم إنشاء الحساب بنجاح!`);
+                closeModal('registerModal');
+                showMainApp();
+            } catch (e) {
+                alert('حدث خطأ أثناء التسجيل.');
             }
-            const newUser = { username, family, email, password };
-            users.push(newUser);
-            saveUsers(users);
-            currentUser = newUser;
-            window.currentUser = newUser;
-            localStorage.setItem('currentUser', JSON.stringify(newUser));
-            alert(`تم إنشاء الحساب بنجاح!`);
-            closeModal('registerModal');
-            showMainApp();
         }
 
         function generateUniqueTicket(users) {
@@ -1621,14 +1672,6 @@
                 ticket = Math.floor(Math.random() * 90000) + 10000;
             } while (existingTickets.has(ticket));
             return ticket;
-        }
-
-        function getUsers() {
-            return JSON.parse(localStorage.getItem('masabqaUsers') || '[]');
-        }
-
-        function saveUsers(users) {
-            localStorage.setItem('masabqaUsers', JSON.stringify(users));
         }
 
         function showMainApp() {
@@ -1644,7 +1687,7 @@
         }
 
         function showTicketsScreen() {
-            // استخدم window.currentUser فقط (لا تحمل من localStorage إلا إذا كان حقيقي)
+            // استخدم window.currentUser فقط للمستخدم الحالي
             let cu = window.currentUser;
             if (!cu) {
                 alert('سجل الدخول أولاً لعرض أرقامك.');

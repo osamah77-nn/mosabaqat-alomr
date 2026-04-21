@@ -207,7 +207,15 @@ app.get('/participants', async (req, res) => {
         console.log('👥 Fetching participants...');
         const participants = await participantsCollection.find().toArray();
         console.log(`✅ Found ${participants.length} participants`);
-        res.json(participants.map(p => ({ ...p, id: p._id })));
+        res.json(participants.map(p => ({
+            id: p._id,
+            username: p.username,
+            family: p.family || '',
+            email: p.email,
+            registrationNumber: p.registrationNumber,
+            role: p.role,
+            createdAt: p.createdAt
+        })));
     } catch (err) {
         console.error('❌ Participants fetch error:', err);
         res.status(500).json({ message: 'فشل جلب المشاركين' });
@@ -242,7 +250,14 @@ app.post('/login', async (req, res) => {
 
         const role = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
         console.log('✅ Login successful:', { username: user.username, role });
-        return res.json({ token: "user-token", username: user.username, role });
+        return res.json({
+            token: "user-token",
+            username: user.username,
+            family: user.family || '',
+            email: user.email,
+            registrationNumber: user.registrationNumber,
+            role
+        });
     } catch (err) {
         console.error('❌ Login error:', err);
         res.status(500).json({ message: 'حدث خطأ أثناء تسجيل الدخول' });
@@ -253,10 +268,15 @@ app.post('/login', async (req, res) => {
 app.post('/register', async (req, res) => {
     try {
         console.log('📝 Register request received:', req.body);
-        const { username, email, password } = req.body;
+        const { username, family, email, password } = req.body;
 
-        if (!username || !email || !password) {
-            console.log('❌ Missing fields:', { username: !!username, email: !!email, password: !!password });
+        if (!username || !family || !email || !password) {
+            console.log('❌ Missing fields:', {
+                username: !!username,
+                family: !!family,
+                email: !!email,
+                password: !!password
+            });
             return res.status(400).json({ message: 'يرجى تعبئة جميع الحقول' });
         }
 
@@ -275,6 +295,7 @@ app.post('/register', async (req, res) => {
 
         const newParticipant = {
             username,
+            family,
             email,
             passwordHash,
             registrationNumber,
@@ -285,12 +306,13 @@ app.post('/register', async (req, res) => {
         const result = await participantsCollection.insertOne(newParticipant);
         console.log('✅ User registered successfully:', {
             username,
+            family,
             email,
             registrationNumber,
             insertedId: result.insertedId
         });
 
-        res.status(201).json({ username, email, registrationNumber, role });
+        res.status(201).json({ username, family, email, registrationNumber, role });
     } catch (err) {
         console.error('❌ Register error:', err);
         res.status(500).json({ message: 'حدث خطأ أثناء التسجيل' });
