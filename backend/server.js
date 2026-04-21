@@ -214,6 +214,43 @@ app.get('/participants', async (req, res) => {
     }
 });
 
+// إرجاع جميع طلبات الدفع للمطور فقط
+app.get('/payments', async (req, res) => {
+    try {
+        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
+        const adminPassword = String(req.headers['x-admin-password'] || '');
+        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
+            return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى طلبات الدفع' });
+        }
+
+        const payments = await paymentsCollection
+            .find(
+                {},
+                {
+                    projection: {
+                        _id: 0,
+                        username: 1,
+                        email: 1,
+                        amount: 1,
+                        quantity: 1,
+                        paymentMethod: 1,
+                        paymentTarget: 1,
+                        proofImage: 1,
+                        status: 1,
+                        createdAt: 1
+                    }
+                }
+            )
+            .sort({ createdAt: -1 })
+            .toArray();
+
+        res.json(payments);
+    } catch (err) {
+        console.error('❌ Payments fetch error:', err);
+        res.status(500).json({ message: 'فشل جلب طلبات الدفع' });
+    }
+});
+
 // تسجيل الدخول (موحد للجميع)
 app.post('/login', async (req, res) => {
     try {
