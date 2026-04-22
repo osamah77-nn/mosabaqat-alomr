@@ -4,6 +4,9 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 const { MongoClient, ObjectId } = require('mongodb');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
 // تعريف التطبيق مباشرة بعد الاستيراد
 const app = express();
@@ -33,9 +36,41 @@ app.use(cors({
 
 app.use(express.json({ limit: '25mb' }));
 
-const fs = require('fs');
-if (fs.existsSync('public')) {
-    app.use(express.static('public'));
+const uploadsRootDir = path.join(__dirname, 'uploads');
+const paymentUploadsDir = path.join(uploadsRootDir, 'payments');
+fs.mkdirSync(paymentUploadsDir, { recursive: true });
+
+if (fs.existsSync(path.join(__dirname, 'public'))) {
+    app.use(express.static(path.join(__dirname, 'public')));
+}
+app.use('/uploads', express.static(uploadsRootDir));
+
+const paymentUpload = multer({
+    storage: multer.diskStorage({
+        destination: function (_req, _file, cb) {
+            cb(null, paymentUploadsDir);
+        },
+        filename: function (_req, file, cb) {
+            const originalExt = path.extname(file.originalname || '').toLowerCase();
+            const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(originalExt) ? originalExt : '.jpg';
+            cb(null, `payment-${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
+        }
+    }),
+    limits: {
+        fileSize: 2 * 1024 * 1024
+    },
+    fileFilter: function (_req, file, cb) {
+        if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+            cb(new Error('INVALID_PAYMENT_IMAGE_TYPE'));
+            return;
+        }
+        cb(null, true);
+    }
+});
+
+function removeUploadedPaymentProof(filePath) {
+    if (!filePath) return;
+    fs.unlink(filePath, function () { });
 }
 
 // ربط MongoDB
@@ -627,73 +662,92 @@ app.post('/participants/prize-address', async (req, res) => {
 });
 
 // حفظ طلب دفع يدوي جديد
-app.post('/submit-payment', async (req, res) => {
-    try {
-        const {
-            username,
-            email,
-            amount,
-            quantity,
-            paymentMethod,
-            paymentTarget,
-            proofImage
-        } = req.body || {};
-
-        console.log('💳 POST /submit-payment received', {
-            username: username || '',
-            email: email || '',
-            amount,
-            quantity,
-            paymentMethod: paymentMethod || '',
-            paymentTarget: paymentTarget || '',
-            proofImageLength: proofImage ? String(proofImage).length : 0
-        });
-
-        if (!username || !email || !amount || !quantity || !paymentMethod || !paymentTarget || !proofImage) {
-            return res.status(400).json({ message: 'جميع بيانات الدفع مطلوبة' });
+app.post('/submit-payment', function (req, res) {
+    paymentUpload.single('proofImage')(req, res, async function (uploadErr) {
+        if (uploadErr) {
+            if (uploadErr instanceof multer.MulterError && uploadErr.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ message: 'حجم الصورة يجب ألا يتجاوز 2MB' });
+            }
+            if (uploadErr.message === 'INVALID_PAYMENT_IMAGE_TYPE') {
+                return res.status(400).json({ message: 'يجب رفع صورة إثبات بصيغة صورة صحيحة' });
+            }
+            console.error('❌ Payment upload error:', uploadErr);
+            return res.status(500).json({ message: 'فشل رفع صورة الإثبات' });
         }
 
-        const paymentRequest = {
-            username: String(username).trim(),
-            email: String(email).trim().toLowerCase(),
-            amount: Number(amount),
-            quantity: Number(quantity),
-            paymentMethod: String(paymentMethod).trim(),
-            paymentTarget: String(paymentTarget).trim(),
-            proofImage: String(proofImage),
-            status: 'pending',
-            createdAt: new Date()
-        };
+        try {
+            const {
+                username,
+                email,
+                amount,
+                quantity,
+                paymentMethod,
+                paymentTarget
+            } = req.body || {};
+            const proofImageFile = req.file || null;
 
-        if (
-            !paymentRequest.username ||
-            !paymentRequest.email ||
-            !Number.isFinite(paymentRequest.amount) ||
-            paymentRequest.amount < 1 ||
-            !Number.isFinite(paymentRequest.quantity) ||
-            paymentRequest.quantity < 1 ||
-            !paymentRequest.paymentMethod ||
-            !paymentRequest.paymentTarget ||
-            !paymentRequest.proofImage
-        ) {
-            return res.status(400).json({ message: 'بيانات الدفع غير صالحة' });
+            console.log('💳 POST /submit-payment received', {
+                username: username || '',
+                email: email || '',
+                amount,
+                quantity,
+                paymentMethod: paymentMethod || '',
+                paymentTarget: paymentTarget || '',
+                uploadedFile: proofImageFile ? proofImageFile.filename : ''
+            });
+
+            if (!username || !email || !amount || !quantity || !paymentMethod || !paymentTarget || !proofImageFile) {
+                removeUploadedPaymentProof(proofImageFile && proofImageFile.path);
+                return res.status(400).json({ message: 'جميع بيانات الدفع مطلوبة' });
+            }
+
+            const relativeProofImagePath = `/uploads/payments/${proofImageFile.filename}`;
+            const paymentRequest = {
+                username: String(username).trim(),
+                email: String(email).trim().toLowerCase(),
+                amount: Number(amount),
+                quantity: Number(quantity),
+                paymentMethod: String(paymentMethod).trim(),
+                paymentTarget: String(paymentTarget).trim(),
+                proofImage: relativeProofImagePath,
+                proofImageFilename: proofImageFile.filename,
+                status: 'pending',
+                createdAt: new Date()
+            };
+
+            if (
+                !paymentRequest.username ||
+                !paymentRequest.email ||
+                !Number.isFinite(paymentRequest.amount) ||
+                paymentRequest.amount < 1 ||
+                !Number.isFinite(paymentRequest.quantity) ||
+                paymentRequest.quantity < 1 ||
+                !paymentRequest.paymentMethod ||
+                !paymentRequest.paymentTarget ||
+                !paymentRequest.proofImage
+            ) {
+                removeUploadedPaymentProof(proofImageFile.path);
+                return res.status(400).json({ message: 'بيانات الدفع غير صالحة' });
+            }
+
+            const result = await paymentsCollection.insertOne(paymentRequest);
+            console.log('💳 Payment saved successfully in MongoDB', {
+                id: String(result.insertedId),
+                email: paymentRequest.email,
+                status: paymentRequest.status,
+                proofImage: paymentRequest.proofImage
+            });
+            res.status(201).json({
+                message: 'تم حفظ طلب الدفع',
+                id: result.insertedId,
+                status: paymentRequest.status
+            });
+        } catch (err) {
+            removeUploadedPaymentProof(req.file && req.file.path);
+            console.error('❌ Submit payment error:', err);
+            res.status(500).json({ message: 'فشل حفظ طلب الدفع' });
         }
-
-        const result = await paymentsCollection.insertOne(paymentRequest);
-        console.log('💳 Payment saved successfully in MongoDB', {
-            id: String(result.insertedId),
-            email: paymentRequest.email,
-            status: paymentRequest.status
-        });
-        res.status(201).json({
-            message: 'تم حفظ طلب الدفع',
-            id: result.insertedId,
-            status: paymentRequest.status
-        });
-    } catch (err) {
-        console.error('❌ Submit payment error:', err);
-        res.status(500).json({ message: 'فشل حفظ طلب الدفع' });
-    }
+    });
 });
 
 // تشغيل السيرفر بعد الاتصال بقاعدة البيانات

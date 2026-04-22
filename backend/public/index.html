@@ -958,15 +958,6 @@
             document.getElementById('selectedPaymentTargetInfo').textContent = 'وسيلة الدفع المختارة: ' + selectedPaymentMethod;
         }
 
-        function readProofImageAsDataUrl(file) {
-            return new Promise(function (resolve, reject) {
-                var reader = new FileReader();
-                reader.onload = function () { resolve(reader.result); };
-                reader.onerror = function () { reject(new Error('proof-read-failed')); };
-                reader.readAsDataURL(file);
-            });
-        }
-
         async function submitManualPaymentRequest() {
             if (isSubmittingPaymentRequest) {
                 return;
@@ -985,6 +976,10 @@
                 alert('يرجى رفع صورة الإثبات');
                 return;
             }
+            if (proofFile.size > 2 * 1024 * 1024) {
+                alert('حجم الصورة يجب ألا يتجاوز 2MB');
+                return;
+            }
 
             const submitBtn = document.getElementById('submitPaymentRequestBtn');
             const submitStatus = document.getElementById('paymentSubmitStatus');
@@ -1001,19 +996,17 @@
             }
 
             try {
-                var proofImage = await readProofImageAsDataUrl(proofFile);
+                const formData = new FormData();
+                formData.append('username', window.currentUser.username || '');
+                formData.append('email', window.currentUser.email || '');
+                formData.append('amount', String(getCurrentPurchaseAmount()));
+                formData.append('quantity', String(getCurrentPurchaseQuantity()));
+                formData.append('paymentMethod', selectedPaymentMethod);
+                formData.append('paymentTarget', selectedPaymentTarget);
+                formData.append('proofImage', proofFile);
                 const response = await fetch('/submit-payment', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: window.currentUser.username || '',
-                        email: window.currentUser.email || '',
-                        amount: getCurrentPurchaseAmount(),
-                        quantity: getCurrentPurchaseQuantity(),
-                        paymentMethod: selectedPaymentMethod,
-                        paymentTarget: selectedPaymentTarget,
-                        proofImage: proofImage
-                    })
+                    body: formData
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {

@@ -13,7 +13,8 @@
     "crypto": "^1.0.1",
     "dotenv": "^16.0.0",
     "express": "^4.18.2",
-    "mongodb": "^6.21.0"
+    "mongodb": "^6.21.0",
+    "multer": "^2.1.1"
   },
   "keywords": [
     "node",
