@@ -361,6 +361,54 @@
             font-size: 2rem;
         }
 
+        .tutorial-modal-content {
+            max-width: 760px;
+            padding: 32px 28px;
+            text-align: right;
+            line-height: 1.9;
+        }
+
+        .tutorial-modal-content h2 {
+            margin-bottom: 18px;
+        }
+
+        .tutorial-block {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 215, 0, 0.12);
+            border-radius: 18px;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+        }
+
+        .tutorial-block h3 {
+            color: #FFD700;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .tutorial-block ul,
+        .tutorial-block ol {
+            margin: 0;
+            padding-right: 20px;
+        }
+
+        .tutorial-block li {
+            margin-bottom: 6px;
+            color: #f3f3f3;
+        }
+
+        .tutorial-note {
+            color: #FFD700;
+            font-weight: 600;
+        }
+
+        .tutorial-open-btn {
+            margin-top: 18px;
+            padding: 10px 22px;
+            min-width: unset;
+            font-size: 0.95rem;
+        }
+
         .form-group {
             margin-bottom: 25px;
         }
@@ -666,6 +714,7 @@
                     <div id="ticketInfo" class="ticket-info" style="display:none"></div>
                     <div id="userNameInfo" class="ticket-info" style="display:none"></div>
                     <div id="userMessagesBox" class="ticket-info" style="display:none;text-align:right;"></div>
+                    <button type="button" class="app-btn tutorial-open-btn" onclick="openTutorialModal(true)">التعليمات</button>
                 </div>
             </div>
             <div id="newsBox"
@@ -1212,6 +1261,117 @@
         </div>
     </div>
 
+
+    <div id="tutorialModal" class="modal">
+        <div class="modal-content tutorial-modal-content">
+            <h2>🎉 مرحبًا بك في المنصة</h2>
+
+            <div class="tutorial-block">
+                <h3>💡 فكرة المشروع</h3>
+                <ul>
+                    <li>تسجيل المشتركين</li>
+                    <li>منح كل مشترك أرقام خاصة به</li>
+                    <li>إدخال هذه الأرقام في السحوبات</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>📊 السحوبات قد تكون</h3>
+                <ul>
+                    <li>يومية</li>
+                    <li>أسبوعية</li>
+                    <li>شهرية</li>
+                    <li>سنوية</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>🎯 كل رقم تملكه</h3>
+                <ul>
+                    <li>يدخل في جميع السحوبات</li>
+                    <li>يبقى معك للأبد</li>
+                    <li>لا يتم حذفه</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>💰 يمكنك الربح</h3>
+                <ul>
+                    <li>اليوم</li>
+                    <li>أو لاحقًا حتى بعد سنوات</li>
+                </ul>
+                <div style="margin-top:10px;">🤝 كما أن جزءًا من الاشتراكات يتم التبرع به للمساكين والمحتاجين</div>
+                <div style="margin-top:10px;">✨ بذلك أنت تشارك في فرصة الربح وتساهم في مساعدة الآخرين</div>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>📌 كيفية الحصول على أرقام</h3>
+                <ol>
+                    <li>ادخل إلى: شراء الأرقام / ابدأ الشراء</li>
+                    <li>قم بتحديد: قيمة الشراء (المبلغ) وعدد الأرقام</li>
+                    <li>اضغط على: الدفع</li>
+                </ol>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>💳 اختيار طريقة الدفع</h3>
+                <div style="margin-bottom:10px;">يمكنك الدفع عبر:</div>
+                <ul>
+                    <li>Binance UID (معرف باينانس)</li>
+                    <li>أو محافظ: Ethereum / Bitcoin / BNB / Solana / Base</li>
+                </ul>
+                <div class="tutorial-note" style="margin-top:12px;">⚠️ يجب التأكد أن العنوان الذي تنسخه هو على نفس الشبكة التي ستحول عبرها</div>
+                <div style="margin-top:8px;">❗ في حال الإرسال على شبكة خاطئة قد تفقد أموالك</div>
+                <div style="margin-top:12px;">🟡 ملاحظة حول Binance UID: لا تحتاج اختيار شبكة لأنه يعمل داخل Binance مباشرة</div>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>🎁 عنوان استلام الأرباح</h3>
+                <ul>
+                    <li>يجب إدخال عنوانك الخاص لاستلام الجوائز وأرباح الإحالة</li>
+                    <li>إذا كان Binance UID فيُستخدم كما هو</li>
+                    <li>إذا كانت محفظة فيجب أن تكون على شبكة BNB (BNB Smart Chain)</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>✅ بعد الدفع</h3>
+                <ul>
+                    <li>قم برفع صورة إثبات التحويل</li>
+                    <li>سيتم مراجعة الطلب خلال 24 ساعة</li>
+                    <li>بعد الموافقة يتم منحك الأرقام وتصلك رسالة تأكيد</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>🎫 الأرقام الخاصة بك</h3>
+                <ul>
+                    <li>تظهر في قائمة عرض الأرقام</li>
+                    <li>كل رقم يدخل في جميع السحوبات ويبقى معك للأبد</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>🔗 نظام الإحالة</h3>
+                <ul>
+                    <li>لديك رابط إحالة خاص بك</li>
+                    <li>يمكنك مشاركته مع الآخرين</li>
+                    <li>عند تسجيل أي شخص عبرك تحصل على 10% من كل عملية شراء يقوم بها</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-block">
+                <h3>💰 أرباح الإحالة</h3>
+                <ul>
+                    <li>تظهر في قسم الإحالة</li>
+                    <li>يمكنك طلب سحبها في أي وقت</li>
+                    <li>يتم تحويل الأرباح إلى عنوان الاستلام الخاص بك</li>
+                </ul>
+            </div>
+
+            <button type="button" class="submit-btn" onclick="confirmTutorialSeen()">فهمت</button>
+        </div>
+    </div>
 
     <!-- Admin Page -->
     <div id="adminPage" class="main-app" style="display:none">
@@ -1810,6 +1970,34 @@
             } catch { }
         }
 
+        function openTutorialModal(forceOpen) {
+            if (!forceOpen && (!currentUser || currentUser.role === 'admin' || currentUser.tutorialSeen)) {
+                return;
+            }
+            openModal('tutorialModal');
+        }
+
+        async function confirmTutorialSeen() {
+            if (!currentUser || !currentUser.email) {
+                closeModal('tutorialModal');
+                return;
+            }
+
+            try {
+                await fetch('/participants/tutorial-seen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentUser.email })
+                });
+            } catch { }
+
+            saveCurrentUser({
+                ...currentUser,
+                tutorialSeen: true
+            });
+            closeModal('tutorialModal');
+        }
+
         function getUserTicketNumbers(user) {
             if (user && Array.isArray(user.ticketNumbers) && user.ticketNumbers.length) {
                 return user.ticketNumbers.map(function (number) { return String(number); });
@@ -1871,12 +2059,20 @@
                 return;
             }
 
+            currentUser = await refreshCurrentUserData() || currentUser;
+            window.currentUser = currentUser;
+
             const withdrawBtn = document.getElementById('requestReferralWithdrawBtn');
             const withdrawStatusMsg = document.getElementById('referralWithdrawStatusMsg');
             const referralBalance = Number(currentUser.referralBalance || 0);
+            const prizeAddress = String(currentUser.prizeAddress || '').trim();
 
             if (!(referralBalance > 0)) {
                 alert('لا يمكن إرسال طلب سحب لأن رصيد أرباح الإحالة يساوي صفر');
+                return;
+            }
+            if (!prizeAddress) {
+                alert('يجب عليك أولًا إدخال عنوان الاستلام قبل إرسال طلب السحب');
                 return;
             }
 
@@ -2100,6 +2296,7 @@
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
+                    tutorialSeen: Object.prototype.hasOwnProperty.call(data, 'tutorialSeen') ? Boolean(data.tutorialSeen) : Boolean(window.currentUser.tutorialSeen),
                     messages: Array.isArray(data.messages) ? data.messages : [],
                     role: data.role || window.currentUser.role || 'user'
                 };
@@ -2111,6 +2308,7 @@
                 }
                 renderUserMessages(updatedUser.messages, 'ticketsMessagesBox');
                 showNewUserMessagePopup(updatedUser.email, updatedUser.messages);
+                openTutorialModal(false);
                 return updatedUser;
             } catch (e) {
                 return window.currentUser;
@@ -2286,6 +2484,7 @@
                         <div style="margin-bottom:8px;"><b>رمز الإحالة:</b> <span style="color:#FFD700;direction:ltr;">${request.referralCode || ''}</span></div>
                         <div style="margin-bottom:8px;"><b>الرصيد الحالي:</b> ${Number(request.referralBalance || 0).toFixed(2)} USDT</div>
                         <div style="margin-bottom:8px;"><b>المبلغ المطلوب:</b> ${Number(request.requestedAmount || 0).toFixed(2)} USDT</div>
+                        <div style="margin-bottom:8px;"><b>عنوان الاستلام:</b> <span style="color:#FFD700;direction:ltr;text-align:left;display:inline-block;overflow-wrap:anywhere;">${request.prizeAddress || ''}</span></div>
                         <div style="margin-bottom:8px;"><b>الحالة:</b> <span style="color:#FFD700;">${statusText}</span></div>
                         ${rejectionHtml}
                         <div style="margin-bottom:14px;"><b>التاريخ:</b> ${request.createdAt ? new Date(request.createdAt).toLocaleString('ar-EG') : ''}</div>
@@ -2496,6 +2695,7 @@
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
+                    tutorialSeen: Boolean(data.tutorialSeen),
                     messages: Array.isArray(data.messages) ? data.messages : [],
                     role: data.role || 'user'
                 };
@@ -2554,6 +2754,7 @@
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
+                    tutorialSeen: Boolean(data.tutorialSeen),
                     messages: Array.isArray(data.messages) ? data.messages : [],
                     role: data.role || 'user'
                 });
@@ -2587,6 +2788,7 @@
             }
             await refreshCurrentUserData();
             updateReferralSection();
+            openTutorialModal(false);
         }
 
         async function showTicketsScreen() {

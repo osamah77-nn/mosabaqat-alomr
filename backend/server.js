@@ -394,6 +394,14 @@ async function backfillParticipantReferralFields() {
     if (referralFieldSync.modifiedCount) {
         console.log(`✅ Referral metadata backfilled for ${referralFieldSync.modifiedCount} users`);
     }
+    const tutorialFieldSync = await participantsCollection.updateMany(
+        { tutorialSeen: { $exists: false } },
+        { $set: { tutorialSeen: false } }
+    );
+
+    if (tutorialFieldSync.modifiedCount) {
+        console.log(`Tutorial flags backfilled for ${tutorialFieldSync.modifiedCount} users`);
+    }
 }
 
 function buildParticipantResponse(participant) {
@@ -411,6 +419,7 @@ function buildParticipantResponse(participant) {
         registrationNumber: ticketNumbers[0] || null,
         ticketNumbers,
         prizeAddress: participant.prizeAddress || '',
+        tutorialSeen: Boolean(participant.tutorialSeen),
         messages: Array.isArray(participant.messages) ? participant.messages : [],
         role: participant.role,
         createdAt: participant.createdAt
@@ -823,6 +832,36 @@ app.get('/user-profile', async (req, res) => {
 });
 
 // تسجيل الدخول (موحد للجميع)
+app.post('/participants/tutorial-seen', async (req, res) => {
+    try {
+        const email = String(req.body?.email || '').trim().toLowerCase();
+        if (!email) {
+            return res.status(400).json({ message: 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…Ø·Ù„ÙˆØ¨' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯' });
+        }
+
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            { $set: { tutorialSeen: true } }
+        );
+
+        res.json({
+            message: 'ØªÙ… Ø­ÙØ¸ Ø­Ø§Ù„Ø© Ø§Ù„ØªØ¹Ù„ÙŠÙ…Ø§Øª',
+            tutorialSeen: true
+        });
+    } catch (err) {
+        console.error('Tutorial seen update error:', err);
+        res.status(500).json({ message: 'ÙØ´Ù„ Ø­ÙØ¸ Ø­Ø§Ù„Ø© Ø§Ù„ØªØ¹Ù„ÙŠÙ…Ø§Øª' });
+    }
+});
+
 app.post('/login', async (req, res) => {
     try {
         console.log('🔐 Login request:', { email: req.body.email || req.body.username });
@@ -863,6 +902,7 @@ app.post('/login', async (req, res) => {
             registrationNumber: getParticipantNumbers(user)[0] || null,
             ticketNumbers: getParticipantNumbers(user),
             prizeAddress: user.prizeAddress || '',
+            tutorialSeen: Boolean(user.tutorialSeen),
             messages: Array.isArray(user.messages) ? user.messages : [],
             role
         });
@@ -902,17 +942,12 @@ app.post('/register', async (req, res) => {
         }
 
         const duplicateName = await participantsCollection.findOne({
-            $or: [
-                { username: { $regex: new RegExp(`^${String(username).trim()}$`, 'i') } },
-                { family: { $regex: new RegExp(`^${String(family).trim()}$`, 'i') } }
-            ]
+            username: { $regex: new RegExp(`^${String(username).trim()}$`, 'i') },
+            family: { $regex: new RegExp(`^${String(family).trim()}$`, 'i') }
         });
 
         if (duplicateName) {
-            if (String(duplicateName.username || '').toLowerCase() === String(username).trim().toLowerCase()) {
-                return res.status(400).json({ message: 'الاسم مستخدم بالفعل' });
-            }
-            return res.status(400).json({ message: 'اللقب مستخدم بالفعل' });
+            return res.status(400).json({ message: 'الاسم الكامل مستخدم بالفعل' });
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
@@ -930,6 +965,7 @@ app.post('/register', async (req, res) => {
             referredByUserId: null,
             referralBalance: 0,
             prizeAddress: '',
+            tutorialSeen: false,
             role,
             createdAt: new Date()
         };
@@ -954,6 +990,7 @@ app.post('/register', async (req, res) => {
             registrationNumber: null,
             ticketNumbers: [],
             prizeAddress: '',
+            tutorialSeen: false,
             messages: [],
             role
         });
@@ -1075,6 +1112,11 @@ app.post('/referral-withdraw-requests', async (req, res) => {
             return res.status(400).json({ message: 'لا يمكن إرسال طلب سحب لأن رصيد أرباح الإحالة يساوي صفر' });
         }
 
+        const prizeAddress = String(participant.prizeAddress || '').trim();
+        if (!prizeAddress) {
+            return res.status(400).json({ message: 'يجب عليك أولاً إدخال عنوان الاستلام قبل إرسال طلب السحب' });
+        }
+
         const existingPendingRequest = await referralWithdrawRequestsCollection.findOne({
             email: participant.email.toLowerCase(),
             status: 'pending'
@@ -1091,6 +1133,7 @@ app.post('/referral-withdraw-requests', async (req, res) => {
             referralCode: participant.referralCode || '',
             referralBalance,
             requestedAmount: referralBalance,
+            prizeAddress,
             status: 'pending',
             createdAt: new Date(),
             participantId: participant._id
@@ -1127,6 +1170,7 @@ app.get('/referral-withdraw-requests', async (req, res) => {
                     referralCode: 1,
                     referralBalance: 1,
                     requestedAmount: 1,
+                    prizeAddress: 1,
                     status: 1,
                     createdAt: 1,
                     rejectionReason: 1
@@ -1142,6 +1186,7 @@ app.get('/referral-withdraw-requests', async (req, res) => {
             referralCode: request.referralCode || '',
             referralBalance: Number(request.referralBalance || 0),
             requestedAmount: Number(request.requestedAmount || 0),
+            prizeAddress: request.prizeAddress || '',
             status: request.status || 'pending',
             createdAt: request.createdAt,
             rejectionReason: request.rejectionReason || ''
