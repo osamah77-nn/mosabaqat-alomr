@@ -73,6 +73,116 @@ function removeUploadedPaymentProof(filePath) {
     fs.unlink(filePath, function () { });
 }
 
+function buildStoredPaymentProofPath(filename) {
+    return `/uploads/payments/${filename}`;
+}
+
+function getPaymentProofExtensionFromMime(mimeType) {
+    switch (String(mimeType || '').toLowerCase()) {
+        case 'image/jpeg':
+        case 'image/jpg':
+            return '.jpg';
+        case 'image/png':
+            return '.png';
+        case 'image/webp':
+            return '.webp';
+        case 'image/gif':
+            return '.gif';
+        default:
+            return '.jpg';
+    }
+}
+
+function normalizePaymentProofPath(payment) {
+    if (payment && typeof payment.proofImage === 'string' && payment.proofImage.startsWith('/uploads/payments/')) {
+        return payment.proofImage;
+    }
+    if (payment && payment.proofImageFilename) {
+        return buildStoredPaymentProofPath(payment.proofImageFilename);
+    }
+    return '';
+}
+
+async function ensurePaymentsIndexes() {
+    await paymentsCollection.createIndex({ createdAt: -1 }, { name: 'payments_createdAt_desc' });
+    await paymentsCollection.createIndex({ status: 1, createdAt: -1 }, { name: 'payments_status_createdAt_desc' });
+}
+
+async function migrateLegacyPaymentProofs() {
+    const cursor = paymentsCollection.find(
+        {
+            proofImage: {
+                $type: 'string',
+                $regex: /^data:image\//
+            }
+        },
+        {
+            projection: {
+                proofImage: 1,
+                proofImageFilename: 1
+            }
+        }
+    );
+
+    let migratedCount = 0;
+    let removedCount = 0;
+
+    for await (const payment of cursor) {
+        const legacyProof = String(payment.proofImage || '');
+        const match = legacyProof.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+
+        if (!match) {
+            await paymentsCollection.updateOne(
+                { _id: payment._id },
+                {
+                    $set: {
+                        proofImage: '',
+                        proofImageFilename: ''
+                    }
+                }
+            );
+            removedCount += 1;
+            continue;
+        }
+
+        try {
+            const mimeType = match[1];
+            const base64Data = match[2];
+            const extension = getPaymentProofExtensionFromMime(mimeType);
+            const filename = payment.proofImageFilename || `legacy-payment-${payment._id}${extension}`;
+            const filePath = path.join(paymentUploadsDir, filename);
+            await fs.promises.writeFile(filePath, Buffer.from(base64Data, 'base64'));
+
+            await paymentsCollection.updateOne(
+                { _id: payment._id },
+                {
+                    $set: {
+                        proofImage: buildStoredPaymentProofPath(filename),
+                        proofImageFilename: filename
+                    }
+                }
+            );
+            migratedCount += 1;
+        } catch (err) {
+            console.error('❌ Legacy payment proof migration failed:', payment._id, err.message);
+            await paymentsCollection.updateOne(
+                { _id: payment._id },
+                {
+                    $set: {
+                        proofImage: '',
+                        proofImageFilename: ''
+                    }
+                }
+            );
+            removedCount += 1;
+        }
+    }
+
+    if (migratedCount || removedCount) {
+        console.log(`💳 Legacy payment proofs handled: migrated=${migratedCount}, removed=${removedCount}`);
+    }
+}
+
 // ربط MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'mosabaqat_alomr';
@@ -91,6 +201,8 @@ async function connectDB() {
         participantsCollection = db.collection('participants');
         winnerCollection = db.collection('winner');
         paymentsCollection = db.collection('payments');
+        await ensurePaymentsIndexes();
+        await migrateLegacyPaymentProofs();
 
         console.log('✅ Connected to MongoDB successfully');
         console.log('✅ Database:', DB_NAME);
@@ -317,6 +429,7 @@ app.get('/payments', async (req, res) => {
                         paymentMethod: 1,
                         paymentTarget: 1,
                         proofImage: 1,
+                        proofImageFilename: 1,
                         status: 1,
                         createdAt: 1,
                         rejectionReason: 1,
@@ -325,6 +438,7 @@ app.get('/payments', async (req, res) => {
                 }
             )
             .sort({ createdAt: -1 })
+            .hint({ createdAt: -1 })
             .toArray();
 
         console.log(`💳 GET /payments returned ${payments.length} requests`);
@@ -337,7 +451,7 @@ app.get('/payments', async (req, res) => {
             quantity: payment.quantity,
             paymentMethod: payment.paymentMethod,
             paymentTarget: payment.paymentTarget,
-            proofImage: payment.proofImage,
+            proofImage: normalizePaymentProofPath(payment),
             status: payment.status,
             createdAt: payment.createdAt,
             rejectionReason: payment.rejectionReason || '',
