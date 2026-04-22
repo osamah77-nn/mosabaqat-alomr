@@ -119,6 +119,11 @@ async function ensurePaymentsIndexes() {
     await paymentsCollection.createIndex({ status: 1, createdAt: -1 }, { name: 'payments_status_createdAt_desc' });
 }
 
+async function ensureReferralWithdrawIndexes() {
+    await referralWithdrawRequestsCollection.createIndex({ createdAt: -1 }, { name: 'referral_withdraw_createdAt_desc' });
+    await referralWithdrawRequestsCollection.createIndex({ email: 1, status: 1 }, { name: 'referral_withdraw_email_status' });
+}
+
 async function migrateLegacyPaymentProofs() {
     const cursor = paymentsCollection.find(
         {
@@ -257,7 +262,7 @@ async function cleanupExpiredPaymentProofs() {
 // ربط MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'mosabaqat_alomr';
-let db, newsCollection, participantsCollection, winnerCollection, paymentsCollection;
+let db, newsCollection, participantsCollection, winnerCollection, paymentsCollection, referralWithdrawRequestsCollection;
 
 async function connectDB() {
     try {
@@ -272,7 +277,11 @@ async function connectDB() {
         participantsCollection = db.collection('participants');
         winnerCollection = db.collection('winner');
         paymentsCollection = db.collection('payments');
+        referralWithdrawRequestsCollection = db.collection('referralWithdrawRequests');
+        await ensureParticipantsIndexes();
+        await backfillParticipantReferralFields();
         await ensurePaymentsIndexes();
+        await ensureReferralWithdrawIndexes();
         await migrateLegacyPaymentProofs();
         await cleanupExpiredPaymentProofs();
 
@@ -282,7 +291,8 @@ async function connectDB() {
             news: !!newsCollection,
             participants: !!participantsCollection,
             winner: !!winnerCollection,
-            payments: !!paymentsCollection
+            payments: !!paymentsCollection,
+            referralWithdrawRequests: !!referralWithdrawRequestsCollection
         });
 
         return true;
@@ -310,6 +320,82 @@ function getParticipantNumbers(participant) {
     return [];
 }
 
+async function generateUniqueReferralCode() {
+    while (true) {
+        const candidate = `REF${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        const exists = await participantsCollection.findOne(
+            { referralCode: candidate },
+            { projection: { _id: 1 } }
+        );
+        if (!exists) {
+            return candidate;
+        }
+    }
+}
+
+async function ensureParticipantsIndexes() {
+    await participantsCollection.createIndex({ referralCode: 1 }, { unique: true, sparse: true, name: 'participants_referralCode_unique' });
+}
+
+async function backfillParticipantReferralFields() {
+    const participantsWithoutCodes = await participantsCollection.find(
+        {
+            $or: [
+                { referralCode: { $exists: false } },
+                { referralCode: null },
+                { referralCode: '' }
+            ]
+        },
+        {
+            projection: { _id: 1 }
+        }
+    ).toArray();
+
+    for (const participant of participantsWithoutCodes) {
+        const referralCode = await generateUniqueReferralCode();
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            { $set: { referralCode } }
+        );
+    }
+    if (participantsWithoutCodes.length) {
+        console.log(`✅ Referral codes backfilled for ${participantsWithoutCodes.length} users`);
+    }
+
+    const referralFieldSync = await participantsCollection.updateMany(
+        {
+            $or: [
+                { referralBalance: { $exists: false } },
+                { referredBy: { $exists: false } },
+                { referredBy: null }
+            ]
+        },
+        [
+            {
+                $set: {
+                    referralBalance: { $ifNull: ['$referralBalance', 0] },
+                    referredBy: {
+                        $cond: [
+                            {
+                                $or: [
+                                    { $eq: ['$referredBy', null] },
+                                    { $eq: ['$referredBy', ''] }
+                                ]
+                            },
+                            { $ifNull: ['$referredByCode', ''] },
+                            '$referredBy'
+                        ]
+                    }
+                }
+            }
+        ]
+    );
+
+    if (referralFieldSync.modifiedCount) {
+        console.log(`✅ Referral metadata backfilled for ${referralFieldSync.modifiedCount} users`);
+    }
+}
+
 function buildParticipantResponse(participant) {
     const ticketNumbers = getParticipantNumbers(participant);
     return {
@@ -317,6 +403,11 @@ function buildParticipantResponse(participant) {
         username: participant.username,
         family: participant.family || '',
         email: participant.email,
+        referralCode: participant.referralCode || '',
+        referredBy: participant.referredBy || participant.referredByCode || '',
+        referredByCode: participant.referredByCode || '',
+        referredByUserId: participant.referredByUserId ? String(participant.referredByUserId) : '',
+        referralBalance: Number(participant.referralBalance || 0),
         registrationNumber: ticketNumbers[0] || null,
         ticketNumbers,
         prizeAddress: participant.prizeAddress || '',
@@ -574,6 +665,11 @@ app.post('/payments/:id/approve', async (req, res) => {
         const currentNumbers = getParticipantNumbers(participant);
         const updatedNumbers = [...currentNumbers, ...newTicketNumbers];
         const approvalMessage = `مبروك، تم تأكيد طلبك وتم منحك عدد ${ticketCount} من الأرقام، وقد دخلت في السحب بنجاح`;
+        const referredByCode = String(participant.referredBy || participant.referredByCode || '').trim().toUpperCase();
+        const paymentAmount = Number(payment.amount || 0);
+        const referralCommission = referredByCode ? Number((paymentAmount * 0.10).toFixed(2)) : 0;
+        let referralPaid = false;
+        let referralBeneficiaryUserId = null;
 
         await participantsCollection.updateOne(
             { _id: participant._id },
@@ -593,6 +689,26 @@ app.post('/payments/:id/approve', async (req, res) => {
             }
         );
 
+        if (referredByCode && !payment.referralPaid && referralCommission > 0) {
+            const inviter = await participantsCollection.findOne({
+                referralCode: referredByCode,
+                _id: { $ne: participant._id }
+            });
+
+            if (inviter) {
+                await participantsCollection.updateOne(
+                    { _id: inviter._id },
+                    {
+                        $inc: {
+                            referralBalance: referralCommission
+                        }
+                    }
+                );
+                referralPaid = true;
+                referralBeneficiaryUserId = inviter._id;
+            }
+        }
+
         await paymentsCollection.updateOne(
             { _id: payment._id },
             {
@@ -600,7 +716,11 @@ app.post('/payments/:id/approve', async (req, res) => {
                     status: 'approved',
                     grantedCount: ticketCount,
                     grantedNumbers: newTicketNumbers,
-                    approvedAt: new Date()
+                    approvedAt: new Date(),
+                    referralPaid,
+                    referralCommission,
+                    referralBeneficiaryUserId,
+                    referralSourceCode: referredByCode || ''
                 }
             }
         );
@@ -735,6 +855,11 @@ app.post('/login', async (req, res) => {
             username: user.username,
             family: user.family || '',
             email: user.email,
+            referralCode: user.referralCode || '',
+            referredBy: user.referredBy || user.referredByCode || '',
+            referredByCode: user.referredByCode || '',
+            referredByUserId: user.referredByUserId ? String(user.referredByUserId) : '',
+            referralBalance: Number(user.referralBalance || 0),
             registrationNumber: getParticipantNumbers(user)[0] || null,
             ticketNumbers: getParticipantNumbers(user),
             prizeAddress: user.prizeAddress || '',
@@ -776,14 +901,34 @@ app.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'البريد الإلكتروني مستخدم بالفعل' });
         }
 
+        const duplicateName = await participantsCollection.findOne({
+            $or: [
+                { username: { $regex: new RegExp(`^${String(username).trim()}$`, 'i') } },
+                { family: { $regex: new RegExp(`^${String(family).trim()}$`, 'i') } }
+            ]
+        });
+
+        if (duplicateName) {
+            if (String(duplicateName.username || '').toLowerCase() === String(username).trim().toLowerCase()) {
+                return res.status(400).json({ message: 'الاسم مستخدم بالفعل' });
+            }
+            return res.status(400).json({ message: 'اللقب مستخدم بالفعل' });
+        }
+
         const passwordHash = await bcrypt.hash(password, 10);
         const role = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
+        const referralCode = await generateUniqueReferralCode();
 
         const newParticipant = {
             username,
             family,
             email,
             passwordHash,
+            referralCode,
+            referredBy: '',
+            referredByCode: '',
+            referredByUserId: null,
+            referralBalance: 0,
             prizeAddress: '',
             role,
             createdAt: new Date()
@@ -801,6 +946,11 @@ app.post('/register', async (req, res) => {
             username,
             family,
             email,
+            referralCode,
+            referredBy: '',
+            referredByCode: '',
+            referredByUserId: '',
+            referralBalance: 0,
             registrationNumber: null,
             ticketNumbers: [],
             prizeAddress: '',
@@ -810,6 +960,62 @@ app.post('/register', async (req, res) => {
     } catch (err) {
         console.error('❌ Register error:', err);
         res.status(500).json({ message: 'حدث خطأ أثناء التسجيل' });
+    }
+});
+
+app.post('/participants/referral', async (req, res) => {
+    try {
+        const email = String(req.body?.email || '').trim().toLowerCase();
+        const referralCode = String(req.body?.referralCode || '').trim().toUpperCase();
+
+        if (!email || !referralCode) {
+            return res.status(400).json({ message: 'البريد الإلكتروني ورمز الإحالة مطلوبان' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+
+        if (participant.referredBy || participant.referredByCode) {
+            return res.status(400).json({ message: 'تم حفظ رمز الإحالة مسبقاً ولا يمكن تغييره' });
+        }
+
+        if (String(participant.referralCode || '').toUpperCase() === referralCode) {
+            return res.status(400).json({ message: 'لا يمكنك إدخال رمز الإحالة الخاص بك' });
+        }
+
+        const inviter = await participantsCollection.findOne({
+            referralCode
+        });
+
+        if (!inviter) {
+            return res.status(400).json({ message: 'رمز الإحالة غير صحيح' });
+        }
+
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            {
+                $set: {
+                    referredBy: referralCode,
+                    referredByCode: referralCode,
+                    referredByUserId: inviter._id
+                }
+            }
+        );
+
+        res.json({
+            message: 'تم حفظ رمز الإحالة بنجاح',
+            referredBy: referralCode,
+            referredByCode: referralCode,
+            referredByUserId: String(inviter._id)
+        });
+    } catch (err) {
+        console.error('❌ Referral save error:', err);
+        res.status(500).json({ message: 'فشل حفظ رمز الإحالة' });
     }
 });
 
@@ -846,6 +1052,242 @@ app.post('/participants/prize-address', async (req, res) => {
     } catch (err) {
         console.error('❌ Prize address update error:', err);
         res.status(500).json({ message: 'فشل حفظ بيانات الاستلام' });
+    }
+});
+
+app.post('/referral-withdraw-requests', async (req, res) => {
+    try {
+        const email = String(req.body?.email || '').trim().toLowerCase();
+        if (!email) {
+            return res.status(400).json({ message: 'البريد الإلكتروني مطلوب' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+
+        const referralBalance = Number(participant.referralBalance || 0);
+        if (!(referralBalance > 0)) {
+            return res.status(400).json({ message: 'لا يمكن إرسال طلب سحب لأن رصيد أرباح الإحالة يساوي صفر' });
+        }
+
+        const existingPendingRequest = await referralWithdrawRequestsCollection.findOne({
+            email: participant.email.toLowerCase(),
+            status: 'pending'
+        });
+
+        if (existingPendingRequest) {
+            return res.status(400).json({ message: 'لديك طلب سحب أرباح إحالة قيد المراجعة بالفعل' });
+        }
+
+        const withdrawRequest = {
+            username: participant.username,
+            family: participant.family || '',
+            email: participant.email.toLowerCase(),
+            referralCode: participant.referralCode || '',
+            referralBalance,
+            requestedAmount: referralBalance,
+            status: 'pending',
+            createdAt: new Date(),
+            participantId: participant._id
+        };
+
+        const result = await referralWithdrawRequestsCollection.insertOne(withdrawRequest);
+        res.status(201).json({
+            message: 'تم إرسال طلب السحب بنجاح وهو الآن قيد المراجعة',
+            id: String(result.insertedId),
+            status: withdrawRequest.status,
+            requestedAmount: withdrawRequest.requestedAmount
+        });
+    } catch (err) {
+        console.error('❌ Referral withdraw request error:', err);
+        res.status(500).json({ message: 'فشل إرسال طلب سحب أرباح الإحالة' });
+    }
+});
+
+app.get('/referral-withdraw-requests', async (req, res) => {
+    try {
+        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
+        const adminPassword = String(req.headers['x-admin-password'] || '');
+        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
+            return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى طلبات سحب أرباح الإحالة' });
+        }
+
+        const requests = await referralWithdrawRequestsCollection.find(
+            {},
+            {
+                projection: {
+                    username: 1,
+                    family: 1,
+                    email: 1,
+                    referralCode: 1,
+                    referralBalance: 1,
+                    requestedAmount: 1,
+                    status: 1,
+                    createdAt: 1,
+                    rejectionReason: 1
+                }
+            }
+        ).sort({ createdAt: -1 }).toArray();
+
+        res.json(requests.map(request => ({
+            id: String(request._id),
+            username: request.username || '',
+            family: request.family || '',
+            email: request.email || '',
+            referralCode: request.referralCode || '',
+            referralBalance: Number(request.referralBalance || 0),
+            requestedAmount: Number(request.requestedAmount || 0),
+            status: request.status || 'pending',
+            createdAt: request.createdAt,
+            rejectionReason: request.rejectionReason || ''
+        })));
+    } catch (err) {
+        console.error('❌ Referral withdraw requests fetch error:', err);
+        res.status(500).json({ message: 'فشل جلب طلبات سحب أرباح الإحالة' });
+    }
+});
+
+app.post('/referral-withdraw-requests/:id/approve', async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'معرف طلب السحب غير صالح' });
+        }
+
+        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
+        const adminPassword = String(req.headers['x-admin-password'] || '');
+        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
+            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات سحب أرباح الإحالة' });
+        }
+
+        const request = await referralWithdrawRequestsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        if (!request) {
+            return res.status(404).json({ message: 'طلب سحب أرباح الإحالة غير موجود' });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({ message: 'تمت معالجة هذا الطلب مسبقاً' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${request.email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم المرتبط بالطلب غير موجود' });
+        }
+
+        const requestedAmount = Number(request.requestedAmount || 0);
+        if (!(requestedAmount > 0)) {
+            return res.status(400).json({ message: 'المبلغ المطلوب غير صالح' });
+        }
+
+        const participantUpdate = await participantsCollection.updateOne(
+            {
+                _id: participant._id,
+                referralBalance: { $gte: requestedAmount }
+            },
+            {
+                $inc: { referralBalance: -requestedAmount },
+                $push: {
+                    messages: {
+                        id: new ObjectId().toString(),
+                        type: 'referral-withdraw-approved',
+                        text: 'تمت الموافقة على طلب سحب أرباح الإحالة الخاص بك وسيتم تحويل المبلغ إليك',
+                        createdAt: new Date()
+                    }
+                }
+            }
+        );
+
+        if (participantUpdate.modifiedCount === 0) {
+            return res.status(400).json({ message: 'رصيد أرباح الإحالة الحالي أقل من المبلغ المطلوب' });
+        }
+
+        await referralWithdrawRequestsCollection.updateOne(
+            { _id: request._id },
+            {
+                $set: {
+                    status: 'approved',
+                    approvedAt: new Date()
+                }
+            }
+        );
+
+        res.json({ message: 'تمت الموافقة على طلب سحب أرباح الإحالة بنجاح' });
+    } catch (err) {
+        console.error('❌ Referral withdraw approve error:', err);
+        res.status(500).json({ message: 'فشل قبول طلب سحب أرباح الإحالة' });
+    }
+});
+
+app.post('/referral-withdraw-requests/:id/reject', async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'معرف طلب السحب غير صالح' });
+        }
+
+        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
+        const adminPassword = String(req.headers['x-admin-password'] || '');
+        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
+            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات سحب أرباح الإحالة' });
+        }
+
+        const reason = String(req.body?.reason || '').trim();
+        if (!reason) {
+            return res.status(400).json({ message: 'سبب الرفض مطلوب' });
+        }
+
+        const request = await referralWithdrawRequestsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        if (!request) {
+            return res.status(404).json({ message: 'طلب سحب أرباح الإحالة غير موجود' });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({ message: 'تمت معالجة هذا الطلب مسبقاً' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${request.email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم المرتبط بالطلب غير موجود' });
+        }
+
+        await referralWithdrawRequestsCollection.updateOne(
+            { _id: request._id },
+            {
+                $set: {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectedAt: new Date()
+                }
+            }
+        );
+
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            {
+                $push: {
+                    messages: {
+                        id: new ObjectId().toString(),
+                        type: 'referral-withdraw-rejected',
+                        text: `تم رفض طلب سحب أرباح الإحالة. السبب: ${reason}`,
+                        createdAt: new Date()
+                    }
+                }
+            }
+        );
+
+        res.json({ message: 'تم رفض طلب سحب أرباح الإحالة بنجاح' });
+    } catch (err) {
+        console.error('❌ Referral withdraw reject error:', err);
+        res.status(500).json({ message: 'فشل رفض طلب سحب أرباح الإحالة' });
     }
 });
 

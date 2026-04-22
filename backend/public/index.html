@@ -685,6 +685,30 @@
                 <p>شاهد أرقامك المشاركة في السحب</p>
                 <button type="button" class="app-btn" onclick="showTicketsScreen()">عرض الأرقام</button>
             </div>
+            <div class="app-card">
+                <h3>الإحالة</h3>
+                <p>انسخ رمز الإحالة الخاص بك أو أدخل رمز الشخص الذي دعاك</p>
+                <div style="width:100%; text-align:right; margin-top:14px;">
+                    <div style="color:#FFD700; font-weight:bold; margin-bottom:8px;">رمز الإحالة الخاص بي</div>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <div id="myReferralCodeValue" style="flex:1; min-width:180px; background:#111; color:#FFD700; border:1px solid rgba(255,215,0,0.25); border-radius:12px; padding:12px 14px; direction:ltr; text-align:center; letter-spacing:1px;">...</div>
+                        <button type="button" class="app-btn" style="min-width:unset; padding:10px 18px;" onclick="copyReferralCode()">نسخ</button>
+                    </div>
+                </div>
+                <div style="width:100%; text-align:right; margin-top:18px;">
+                    <div style="color:#FFD700; font-weight:bold; margin-bottom:8px;">رصيد أرباح الإحالة</div>
+                    <div id="referralBalanceValue" style="background:#111; color:#FFD700; border:1px solid rgba(255,215,0,0.25); border-radius:12px; padding:12px 14px; text-align:center;">0 USDT</div>
+                    <div id="referralWithdrawStatusMsg" style="margin-top:10px; display:none;"></div>
+                    <button id="requestReferralWithdrawBtn" type="button" class="app-btn" style="margin-top:12px;" onclick="requestReferralWithdraw()">طلب سحب أرباح الإحالة</button>
+                </div>
+                <div style="width:100%; text-align:right; margin-top:18px;">
+                    <label for="referralCodeInput" style="display:block; color:#FFD700; margin-bottom:8px;">رمز الإحالة الذي دعاك</label>
+                    <input id="referralCodeInput" type="text" style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(255,215,0,0.3); background:#111; color:#fff;" placeholder="أدخل رمز الإحالة">
+                    <div id="savedReferralCodeInfo" style="margin-top:8px; color:#ccc; display:none;"></div>
+                    <div id="referralStatusMsg" style="margin-top:10px; display:none;"></div>
+                    <button id="saveReferralCodeBtn" type="button" class="app-btn" style="margin-top:12px;" onclick="saveReferralCode()">حفظ رمز الإحالة</button>
+                </div>
+            </div>
         </div>
     </div>
     <!-- Tickets Screen خارج mainApp -->
@@ -1298,6 +1322,14 @@
                     </div>
                 </div>
             </div>
+            <div
+                style="margin: 40px auto 0; max-width: 1100px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
+                <h3 style="color:#FFD700; margin-bottom:18px; text-align:center;">طلبات سحب أرباح الإحالة</h3>
+                <div id="adminReferralWithdrawRequestsTable"
+                    style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                    <div style="color:#fff;text-align:center;">جاري تحميل طلبات سحب أرباح الإحالة...</div>
+                </div>
+            </div>
             <!-- جدول بيانات المستخدمين في الأسفل -->
             <div class="app-content" id="adminUsersTable"></div>
             <script>
@@ -1697,6 +1729,7 @@
         const USER_MESSAGE_POPUP_STORAGE_KEY = 'seenUserMessagePopups';
         let participantsCache = [];
         let paymentsCache = [];
+        let referralWithdrawRequestsCache = [];
         let adminAutoRefreshTimer = null;
 
         async function fetchParticipants() {
@@ -1740,6 +1773,26 @@
             return paymentsCache;
         }
 
+        async function fetchReferralWithdrawRequests() {
+            if (!isAdminSession) {
+                throw new Error('غير مصرح');
+            }
+
+            const response = await fetch('/referral-withdraw-requests', {
+                headers: {
+                    'x-admin-email': ADMIN_EMAIL,
+                    'x-admin-password': ADMIN_PASSWORD
+                }
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'فشل جلب طلبات سحب أرباح الإحالة');
+            }
+            const requests = await response.json();
+            referralWithdrawRequestsCache = Array.isArray(requests) ? requests : [];
+            return referralWithdrawRequestsCache;
+        }
+
         function getParticipantByEmail(email) {
             return participantsCache.find(u => (u.email || '').toLowerCase() === (email || '').toLowerCase()) || null;
         }
@@ -1765,6 +1818,178 @@
                 return [String(user.registrationNumber)];
             }
             return [];
+        }
+
+        function updateReferralSection() {
+            const referralCodeBox = document.getElementById('myReferralCodeValue');
+            const referralBalanceBox = document.getElementById('referralBalanceValue');
+            const withdrawStatusMsg = document.getElementById('referralWithdrawStatusMsg');
+            const withdrawBtn = document.getElementById('requestReferralWithdrawBtn');
+            const referralInput = document.getElementById('referralCodeInput');
+            const saveReferralBtn = document.getElementById('saveReferralCodeBtn');
+            const savedReferralInfo = document.getElementById('savedReferralCodeInfo');
+            const referralStatusMsg = document.getElementById('referralStatusMsg');
+            if (!referralCodeBox || !referralBalanceBox || !withdrawStatusMsg || !withdrawBtn || !referralInput || !saveReferralBtn || !savedReferralInfo || !referralStatusMsg) {
+                return;
+            }
+
+            const ownReferralCode = currentUser && currentUser.referralCode ? currentUser.referralCode : '';
+            const referredByCode = currentUser && (currentUser.referredBy || currentUser.referredByCode) ? (currentUser.referredBy || currentUser.referredByCode) : '';
+            const referralBalance = currentUser ? Number(currentUser.referralBalance || 0) : 0;
+
+            referralCodeBox.textContent = ownReferralCode || 'غير متوفر';
+            referralBalanceBox.textContent = referralBalance.toFixed(2) + ' USDT';
+            referralInput.value = referredByCode || '';
+            referralStatusMsg.textContent = '';
+            referralStatusMsg.style.display = 'none';
+            withdrawStatusMsg.textContent = '';
+            withdrawStatusMsg.style.display = 'none';
+            withdrawBtn.disabled = false;
+            withdrawBtn.style.opacity = '1';
+            withdrawBtn.style.cursor = 'pointer';
+
+            if (referredByCode) {
+                referralInput.disabled = true;
+                saveReferralBtn.disabled = true;
+                saveReferralBtn.style.opacity = '0.7';
+                saveReferralBtn.style.cursor = 'not-allowed';
+                savedReferralInfo.style.display = 'block';
+                savedReferralInfo.textContent = 'تم حفظ رمز الإحالة: ' + referredByCode;
+            } else {
+                referralInput.disabled = false;
+                saveReferralBtn.disabled = false;
+                saveReferralBtn.style.opacity = '1';
+                saveReferralBtn.style.cursor = 'pointer';
+                savedReferralInfo.style.display = 'none';
+                savedReferralInfo.textContent = '';
+            }
+        }
+
+        async function requestReferralWithdraw() {
+            if (!currentUser || !currentUser.email) {
+                alert('سجل الدخول أولاً');
+                return;
+            }
+
+            const withdrawBtn = document.getElementById('requestReferralWithdrawBtn');
+            const withdrawStatusMsg = document.getElementById('referralWithdrawStatusMsg');
+            const referralBalance = Number(currentUser.referralBalance || 0);
+
+            if (!(referralBalance > 0)) {
+                alert('لا يمكن إرسال طلب سحب لأن رصيد أرباح الإحالة يساوي صفر');
+                return;
+            }
+
+            try {
+                withdrawBtn.disabled = true;
+                withdrawBtn.style.opacity = '0.7';
+                withdrawBtn.style.cursor = 'not-allowed';
+                withdrawStatusMsg.style.display = 'block';
+                withdrawStatusMsg.style.color = '#FFD700';
+                withdrawStatusMsg.textContent = 'جاري إرسال طلب السحب...';
+
+                const response = await fetch('/referral-withdraw-requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentUser.email })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    withdrawBtn.disabled = false;
+                    withdrawBtn.style.opacity = '1';
+                    withdrawBtn.style.cursor = 'pointer';
+                    withdrawStatusMsg.style.display = 'none';
+                    alert(data.message || 'فشل إرسال طلب سحب أرباح الإحالة');
+                    return;
+                }
+
+                withdrawStatusMsg.style.display = 'block';
+                withdrawStatusMsg.style.color = '#0c0';
+                withdrawStatusMsg.textContent = 'تم إرسال طلب السحب بنجاح وهو الآن قيد المراجعة';
+            } catch (e) {
+                withdrawBtn.disabled = false;
+                withdrawBtn.style.opacity = '1';
+                withdrawBtn.style.cursor = 'pointer';
+                withdrawStatusMsg.style.display = 'none';
+                alert('حدث خطأ أثناء إرسال طلب سحب أرباح الإحالة');
+            }
+        }
+
+        function copyReferralCode() {
+            const code = currentUser && currentUser.referralCode ? currentUser.referralCode : '';
+            if (!code) {
+                alert('رمز الإحالة غير متوفر حالياً');
+                return;
+            }
+            navigator.clipboard.writeText(code).then(function () {
+                alert('تم نسخ رمز الإحالة');
+            }).catch(function () {
+                alert('تعذر نسخ رمز الإحالة');
+            });
+        }
+
+        async function saveReferralCode() {
+            if (!currentUser || !currentUser.email) {
+                alert('سجل الدخول أولاً');
+                return;
+            }
+
+            const referralInput = document.getElementById('referralCodeInput');
+            const referralStatusMsg = document.getElementById('referralStatusMsg');
+            const saveReferralBtn = document.getElementById('saveReferralCodeBtn');
+            const referralCode = String(referralInput.value || '').trim().toUpperCase();
+
+            if (!referralCode) {
+                alert('يرجى إدخال رمز إحالة صحيح');
+                return;
+            }
+
+            if (String(currentUser.referralCode || '').toUpperCase() === referralCode) {
+                alert('لا يمكنك إدخال رمز الإحالة الخاص بك');
+                return;
+            }
+
+            try {
+                saveReferralBtn.disabled = true;
+                saveReferralBtn.style.opacity = '0.7';
+                saveReferralBtn.style.cursor = 'not-allowed';
+                referralStatusMsg.style.display = 'block';
+                referralStatusMsg.style.color = '#FFD700';
+                referralStatusMsg.textContent = 'جاري حفظ رمز الإحالة...';
+
+                const res = await fetch('/participants/referral', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: currentUser.email,
+                        referralCode
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    saveReferralBtn.disabled = false;
+                    saveReferralBtn.style.opacity = '1';
+                    saveReferralBtn.style.cursor = 'pointer';
+                    referralStatusMsg.style.display = 'none';
+                    alert(data.message || 'فشل حفظ رمز الإحالة');
+                    return;
+                }
+
+                currentUser.referredBy = data.referredBy || referralCode;
+                currentUser.referredByCode = data.referredByCode || referralCode;
+                currentUser.referredByUserId = data.referredByUserId || '';
+                saveCurrentUser(currentUser);
+                updateReferralSection();
+                referralStatusMsg.style.display = 'block';
+                referralStatusMsg.style.color = '#0c0';
+                referralStatusMsg.textContent = 'تم حفظ رمز الإحالة بنجاح';
+            } catch (e) {
+                saveReferralBtn.disabled = false;
+                saveReferralBtn.style.opacity = '1';
+                saveReferralBtn.style.cursor = 'pointer';
+                referralStatusMsg.style.display = 'none';
+                alert('حدث خطأ أثناء حفظ رمز الإحالة');
+            }
         }
 
         function renderUserMessages(messages, containerId) {
@@ -1840,6 +2065,7 @@
                 }
                 renderAdminUsers();
                 renderPaymentRequests();
+                renderReferralWithdrawRequests();
             }, 5000);
         }
 
@@ -1866,6 +2092,11 @@
                     username: data.username || window.currentUser.username,
                     family: data.family || '',
                     email: data.email || window.currentUser.email,
+                    referralCode: data.referralCode || window.currentUser.referralCode || '',
+                    referredBy: data.referredBy || data.referredByCode || '',
+                    referredByCode: data.referredByCode || '',
+                    referredByUserId: data.referredByUserId || '',
+                    referralBalance: Number(data.referralBalance || 0),
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
@@ -1893,6 +2124,7 @@
             document.getElementById('adminPage').style.display = 'block';
             renderAdminUsers();
             renderPaymentRequests();
+            renderReferralWithdrawRequests();
             startAdminAutoRefresh();
             fetchNews(); // عند دخول المطور، جلب الأخبار أيضاً
         }
@@ -2010,6 +2242,111 @@
             processedContainer.innerHTML = processedPayments.length
                 ? processedPayments.map(renderPaymentCard).join('')
                 : '<div style="color:#fff;text-align:center;">لا توجد طلبات معالجة حالياً.</div>';
+        }
+
+        async function renderReferralWithdrawRequests() {
+            const container = document.getElementById('adminReferralWithdrawRequestsTable');
+            if (!container) return;
+
+            let requests = [];
+            try {
+                requests = await fetchReferralWithdrawRequests();
+            } catch (e) {
+                container.innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل طلبات سحب أرباح الإحالة.</div>';
+                return;
+            }
+
+            if (!requests.length) {
+                container.innerHTML = '<div style="color:#fff;text-align:center;">لا توجد طلبات سحب أرباح إحالة حالياً.</div>';
+                return;
+            }
+
+            container.innerHTML = requests.map(function (request) {
+                const statusText = request.status === 'pending'
+                    ? 'قيد الانتظار'
+                    : request.status === 'approved'
+                        ? 'مقبول'
+                        : request.status === 'rejected'
+                            ? 'مرفوض'
+                            : request.status;
+                const actionsHtml = request.status === 'pending'
+                    ? `<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                            <button type="button" class="app-btn" style="padding:10px 18px;min-width:unset;" onclick="approveReferralWithdrawRequest('${request.id}')">✔ قبول</button>
+                            <button type="button" class="app-btn" style="padding:10px 18px;min-width:unset;background:#c00;color:#fff;" onclick="rejectReferralWithdrawRequest('${request.id}')">❌ رفض</button>
+                       </div>`
+                    : '<div style="text-align:center;color:#888;">تمت معالجة هذا الطلب</div>';
+                const rejectionHtml = request.status === 'rejected' && request.rejectionReason
+                    ? `<div style="margin-bottom:8px;"><b>سبب الرفض:</b> ${request.rejectionReason}</div>`
+                    : '';
+                return `
+                    <div style="background:#181818;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,0.18);text-align:right;">
+                        <div style="color:#FFD700;font-size:1.15rem;font-weight:bold;margin-bottom:12px;">${request.username || ''}</div>
+                        <div style="margin-bottom:8px;"><b>العائلة:</b> ${request.family || ''}</div>
+                        <div style="margin-bottom:8px;"><b>الإيميل:</b> ${request.email || ''}</div>
+                        <div style="margin-bottom:8px;"><b>رمز الإحالة:</b> <span style="color:#FFD700;direction:ltr;">${request.referralCode || ''}</span></div>
+                        <div style="margin-bottom:8px;"><b>الرصيد الحالي:</b> ${Number(request.referralBalance || 0).toFixed(2)} USDT</div>
+                        <div style="margin-bottom:8px;"><b>المبلغ المطلوب:</b> ${Number(request.requestedAmount || 0).toFixed(2)} USDT</div>
+                        <div style="margin-bottom:8px;"><b>الحالة:</b> <span style="color:#FFD700;">${statusText}</span></div>
+                        ${rejectionHtml}
+                        <div style="margin-bottom:14px;"><b>التاريخ:</b> ${request.createdAt ? new Date(request.createdAt).toLocaleString('ar-EG') : ''}</div>
+                        ${actionsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function approveReferralWithdrawRequest(requestId) {
+            try {
+                const response = await fetch(`/referral-withdraw-requests/${requestId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-email': ADMIN_EMAIL,
+                        'x-admin-password': ADMIN_PASSWORD
+                    }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    alert(data.message || 'فشل قبول طلب سحب أرباح الإحالة');
+                    return;
+                }
+
+                await renderReferralWithdrawRequests();
+                alert('تمت الموافقة على طلب سحب أرباح الإحالة بنجاح');
+            } catch (e) {
+                alert('حدث خطأ أثناء قبول طلب سحب أرباح الإحالة');
+            }
+        }
+
+        async function rejectReferralWithdrawRequest(requestId) {
+            const reason = prompt('اكتب سبب الرفض');
+            if (reason === null) return;
+            if (!String(reason).trim()) {
+                alert('يرجى كتابة سبب الرفض');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/referral-withdraw-requests/${requestId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-email': ADMIN_EMAIL,
+                        'x-admin-password': ADMIN_PASSWORD
+                    },
+                    body: JSON.stringify({ reason: String(reason).trim() })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    alert(data.message || 'فشل رفض طلب سحب أرباح الإحالة');
+                    return;
+                }
+
+                await renderReferralWithdrawRequests();
+                alert('تم رفض طلب سحب أرباح الإحالة بنجاح');
+            } catch (e) {
+                alert('حدث خطأ أثناء رفض طلب سحب أرباح الإحالة');
+            }
         }
 
         // نافذة منبثقة لعرض أرقام المستخدم للمطور
@@ -2151,6 +2488,11 @@
                     username: data.username,
                     family: data.family || '',
                     email: data.email || email,
+                    referralCode: data.referralCode || '',
+                    referredBy: data.referredBy || data.referredByCode || '',
+                    referredByCode: data.referredByCode || '',
+                    referredByUserId: data.referredByUserId || '',
+                    referralBalance: Number(data.referralBalance || 0),
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
@@ -2204,6 +2546,11 @@
                     username: data.username,
                     family: data.family || family,
                     email: data.email || email,
+                    referralCode: data.referralCode || '',
+                    referredBy: data.referredBy || data.referredByCode || '',
+                    referredByCode: data.referredByCode || '',
+                    referredByUserId: data.referredByUserId || '',
+                    referralBalance: Number(data.referralBalance || 0),
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
@@ -2239,6 +2586,7 @@
                 userNameInfo.style.display = 'block';
             }
             await refreshCurrentUserData();
+            updateReferralSection();
         }
 
         async function showTicketsScreen() {
