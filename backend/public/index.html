@@ -1971,6 +1971,11 @@
                     : (payment.status === 'approved' && payment.grantedCount
                         ? `<div style="margin-bottom:8px;"><b>الأرقام الممنوحة:</b> ${payment.grantedCount}</div>`
                         : '');
+                const proofImageHtml = payment.proofImage
+                    ? `<img src="${payment.proofImage}" alt="Payment Proof" style="width:100%;max-height:320px;object-fit:contain;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);">`
+                    : (payment.proofImageDeletedAt
+                        ? `<div style="padding:20px 12px;text-align:center;color:#bbb;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);">تم حذف صورة الإثبات بعد معالجة الطلب</div>`
+                        : `<div style="padding:20px 12px;text-align:center;color:#888;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);">لا توجد صورة متاحة</div>`);
                 return `
                     <div style="background:#181818;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,0.18);text-align:right;">
                         <div style="color:#FFD700;font-size:1.15rem;font-weight:bold;margin-bottom:12px;">${payment.username || ''}</div>
@@ -1984,7 +1989,7 @@
                         <div style="margin-bottom:14px;"><b>تاريخ الطلب:</b> ${createdAt}</div>
                         <div style="margin-bottom:14px;">
                             <div style="margin-bottom:8px;font-weight:bold;">الصورة</div>
-                            <img src="${payment.proofImage || ''}" alt="Payment Proof" style="width:100%;max-height:320px;object-fit:contain;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);">
+                            ${proofImageHtml}
                         </div>
                         ${actionsHtml}
                     </div>

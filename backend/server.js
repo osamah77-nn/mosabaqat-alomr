@@ -103,6 +103,17 @@ function normalizePaymentProofPath(payment) {
     return '';
 }
 
+function resolvePaymentProofFilePath(payment) {
+    if (payment && typeof payment.proofImage === 'string' && payment.proofImage.startsWith('/uploads/payments/')) {
+        const filename = path.basename(payment.proofImage);
+        return path.join(paymentUploadsDir, filename);
+    }
+    if (payment && payment.proofImageFilename) {
+        return path.join(paymentUploadsDir, payment.proofImageFilename);
+    }
+    return '';
+}
+
 async function ensurePaymentsIndexes() {
     await paymentsCollection.createIndex({ createdAt: -1 }, { name: 'payments_createdAt_desc' });
     await paymentsCollection.createIndex({ status: 1, createdAt: -1 }, { name: 'payments_status_createdAt_desc' });
@@ -183,6 +194,66 @@ async function migrateLegacyPaymentProofs() {
     }
 }
 
+async function cleanupExpiredPaymentProofs() {
+    const cutoffDate = new Date(Date.now() - (24 * 60 * 60 * 1000));
+    const expiredPayments = await paymentsCollection.find(
+        {
+            proofImageDeletedAt: { $exists: false },
+            $or: [
+                {
+                    status: 'approved',
+                    approvedAt: { $lte: cutoffDate }
+                },
+                {
+                    status: 'rejected',
+                    rejectedAt: { $lte: cutoffDate }
+                }
+            ]
+        },
+        {
+            projection: {
+                proofImage: 1,
+                proofImageFilename: 1
+            }
+        }
+    ).toArray();
+
+    if (!expiredPayments.length) {
+        return;
+    }
+
+    let cleanedCount = 0;
+    for (const payment of expiredPayments) {
+        const filePath = resolvePaymentProofFilePath(payment);
+        if (filePath) {
+            try {
+                await fs.promises.unlink(filePath);
+            } catch (err) {
+                if (err && err.code !== 'ENOENT') {
+                    console.error('❌ Failed to delete expired payment proof file:', payment._id, err.message);
+                    continue;
+                }
+            }
+        }
+
+        await paymentsCollection.updateOne(
+            { _id: payment._id },
+            {
+                $set: {
+                    proofImage: null,
+                    proofImageFilename: null,
+                    proofImageDeletedAt: new Date()
+                }
+            }
+        );
+        cleanedCount += 1;
+    }
+
+    if (cleanedCount) {
+        console.log(`💳 Expired payment proof images deleted: ${cleanedCount}`);
+    }
+}
+
 // ربط MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'mosabaqat_alomr';
@@ -203,6 +274,7 @@ async function connectDB() {
         paymentsCollection = db.collection('payments');
         await ensurePaymentsIndexes();
         await migrateLegacyPaymentProofs();
+        await cleanupExpiredPaymentProofs();
 
         console.log('✅ Connected to MongoDB successfully');
         console.log('✅ Database:', DB_NAME);
@@ -430,6 +502,7 @@ app.get('/payments', async (req, res) => {
                         paymentTarget: 1,
                         proofImage: 1,
                         proofImageFilename: 1,
+                        proofImageDeletedAt: 1,
                         status: 1,
                         createdAt: 1,
                         rejectionReason: 1,
@@ -452,6 +525,7 @@ app.get('/payments', async (req, res) => {
             paymentMethod: payment.paymentMethod,
             paymentTarget: payment.paymentTarget,
             proofImage: normalizePaymentProofPath(payment),
+            proofImageDeletedAt: payment.proofImageDeletedAt || null,
             status: payment.status,
             createdAt: payment.createdAt,
             rejectionReason: payment.rejectionReason || '',
@@ -878,6 +952,12 @@ async function startServer() {
             console.log('✅ All systems ready!');
             console.log('='.repeat(50));
         });
+
+        setInterval(() => {
+            cleanupExpiredPaymentProofs().catch(err => {
+                console.error('❌ Scheduled payment proof cleanup error:', err);
+            });
+        }, 60 * 60 * 1000);
     } catch (err) {
         console.error('❌ Failed to start server:', err);
         process.exit(1);
