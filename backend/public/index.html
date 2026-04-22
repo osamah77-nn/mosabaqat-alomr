@@ -995,7 +995,8 @@
                 submitBtn.style.cursor = 'not-allowed';
             }
             if (submitStatus) {
-                submitStatus.textContent = 'تم إرسال طلبك بنجاح، طلبك قيد المراجعة وسوف يتم مراجعته خلال مدة أقصاها 24 ساعة';
+                submitStatus.style.color = '#FFD700';
+                submitStatus.textContent = 'جاري إرسال الطلب...';
                 submitStatus.style.display = 'block';
             }
 
@@ -1031,6 +1032,11 @@
                 }
 
                 resetManualPaymentState();
+                if (submitStatus) {
+                    submitStatus.style.color = '#0c0';
+                    submitStatus.textContent = 'تم إرسال طلبك بنجاح، طلبك قيد المراجعة وسوف يتم مراجعته خلال مدة أقصاها 24 ساعة';
+                    submitStatus.style.display = 'block';
+                }
             } catch (e) {
                 isSubmittingPaymentRequest = false;
                 if (submitBtn) {
@@ -1731,9 +1737,12 @@
                 }
             });
             if (!response.ok) {
-                throw new Error('فشل جلب طلبات الدفع');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Payment fetch failed:', response.status, errorData);
+                throw new Error(errorData.message || 'فشل جلب طلبات الدفع');
             }
             const payments = await response.json();
+            console.log('Payments fetched for admin:', Array.isArray(payments) ? payments.length : 0);
             paymentsCache = Array.isArray(payments) ? payments : [];
             return paymentsCache;
         }

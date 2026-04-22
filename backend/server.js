@@ -31,7 +31,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '25mb' }));
 
 const fs = require('fs');
 if (fs.existsSync('public')) {
@@ -268,6 +268,8 @@ app.get('/payments', async (req, res) => {
             return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى طلبات الدفع' });
         }
 
+        console.log('💳 GET /payments request received');
+
         const payments = await paymentsCollection
             .find(
                 {},
@@ -289,6 +291,8 @@ app.get('/payments', async (req, res) => {
             )
             .sort({ createdAt: -1 })
             .toArray();
+
+        console.log(`💳 GET /payments returned ${payments.length} requests`);
 
         res.json(payments.map(payment => ({
             id: String(payment._id),
@@ -635,6 +639,16 @@ app.post('/submit-payment', async (req, res) => {
             proofImage
         } = req.body || {};
 
+        console.log('💳 POST /submit-payment received', {
+            username: username || '',
+            email: email || '',
+            amount,
+            quantity,
+            paymentMethod: paymentMethod || '',
+            paymentTarget: paymentTarget || '',
+            proofImageLength: proofImage ? String(proofImage).length : 0
+        });
+
         if (!username || !email || !amount || !quantity || !paymentMethod || !paymentTarget || !proofImage) {
             return res.status(400).json({ message: 'جميع بيانات الدفع مطلوبة' });
         }
@@ -666,6 +680,11 @@ app.post('/submit-payment', async (req, res) => {
         }
 
         const result = await paymentsCollection.insertOne(paymentRequest);
+        console.log('💳 Payment saved successfully in MongoDB', {
+            id: String(result.insertedId),
+            email: paymentRequest.email,
+            status: paymentRequest.status
+        });
         res.status(201).json({
             message: 'تم حفظ طلب الدفع',
             id: result.insertedId,
