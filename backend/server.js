@@ -410,6 +410,7 @@ function buildParticipantResponse(participant) {
         id: participant._id,
         username: participant.username,
         family: participant.family || '',
+        country: participant.country || '',
         email: participant.email,
         referralCode: participant.referralCode || '',
         referredBy: participant.referredBy || participant.referredByCode || '',
@@ -513,12 +514,13 @@ app.delete('/news/:id', async (req, res) => {
 app.post('/winner', async (req, res) => {
     try {
         console.log('🏆 Winner update request:', req.body);
-        const { name, number, amount } = req.body;
-        if (!name || !number || !amount) {
+        const { name, number, amount, country } = req.body;
+        if (!name || !number || !amount || !country) {
             return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
         }
         const winner = {
             name,
+            country,
             number,
             amount,
             date: new Date().toISOString()
@@ -893,6 +895,7 @@ app.post('/login', async (req, res) => {
             token: "user-token",
             username: user.username,
             family: user.family || '',
+            country: user.country || '',
             email: user.email,
             referralCode: user.referralCode || '',
             referredBy: user.referredBy || user.referredByCode || '',
@@ -916,12 +919,13 @@ app.post('/login', async (req, res) => {
 app.post('/register', async (req, res) => {
     try {
         console.log('📝 Register request received:', req.body);
-        const { username, family, email, password } = req.body;
+        const { username, family, country, email, password, termsAccepted } = req.body;
 
-        if (!username || !family || !email || !password) {
+        if (!username || !family || !country || !email || !password) {
             console.log('❌ Missing fields:', {
                 username: !!username,
                 family: !!family,
+                country: !!country,
                 email: !!email,
                 password: !!password
             });
@@ -930,6 +934,10 @@ app.post('/register', async (req, res) => {
 
         if (String(password).length < 8) {
             return res.status(400).json({ message: 'كلمة المرور يجب أن تكون 8 أحرف أو أرقام على الأقل' });
+        }
+
+        if (termsAccepted !== true) {
+            return res.status(400).json({ message: 'يجب الموافقة على سياسة الاستخدام لإكمال التسجيل' });
         }
 
         const exists = await participantsCollection.findOne({
@@ -957,6 +965,7 @@ app.post('/register', async (req, res) => {
         const newParticipant = {
             username,
             family,
+            country,
             email,
             passwordHash,
             referralCode,
@@ -966,6 +975,8 @@ app.post('/register', async (req, res) => {
             referralBalance: 0,
             prizeAddress: '',
             tutorialSeen: false,
+            termsAccepted: true,
+            termsAcceptedAt: new Date(),
             role,
             createdAt: new Date()
         };
@@ -981,6 +992,7 @@ app.post('/register', async (req, res) => {
         res.status(201).json({
             username,
             family,
+            country,
             email,
             referralCode,
             referredBy: '',

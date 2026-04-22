@@ -700,6 +700,7 @@
             <div class="hero-buttons">
                 <button class="btn btn-primary" onclick="openModal('registerModal')">تسجيل جديد</button>
                 <button class="btn btn-secondary" onclick="openModal('loginModal')">تسجيل دخول</button>
+                <button class="btn btn-secondary" type="button" onclick="window.open('/privacy.html', '_blank')">سياسة الخصوصية</button>
             </div>
         </div>
     </div>
@@ -1230,12 +1231,51 @@
                     <input type="text" id="reg-family" name="family" required>
                 </div>
                 <div class="form-group">
+                    <label for="reg-country">الدولة</label>
+                    <select id="reg-country" name="country" required
+                        style="width:100%;padding:15px;border:2px solid rgba(255, 215, 0, 0.3);border-radius:15px;background:rgba(255,255,255,0.1);color:#ffffff;font-size:1rem;">
+                        <option value="" style="color:#111;">اختر الدولة</option>
+                        <option value="السعودية">السعودية</option>
+                        <option value="اليمن">اليمن</option>
+                        <option value="الإمارات">الإمارات</option>
+                        <option value="الكويت">الكويت</option>
+                        <option value="قطر">قطر</option>
+                        <option value="البحرين">البحرين</option>
+                        <option value="عمان">عمان</option>
+                        <option value="مصر">مصر</option>
+                        <option value="الأردن">الأردن</option>
+                        <option value="فلسطين">فلسطين</option>
+                        <option value="العراق">العراق</option>
+                        <option value="سوريا">سوريا</option>
+                        <option value="لبنان">لبنان</option>
+                        <option value="المغرب">المغرب</option>
+                        <option value="الجزائر">الجزائر</option>
+                        <option value="تونس">تونس</option>
+                        <option value="ليبيا">ليبيا</option>
+                        <option value="السودان">السودان</option>
+                        <option value="موريتانيا">موريتانيا</option>
+                        <option value="الصومال">الصومال</option>
+                        <option value="تركيا">تركيا</option>
+                        <option value="ألمانيا">ألمانيا</option>
+                        <option value="فرنسا">فرنسا</option>
+                        <option value="المملكة المتحدة">المملكة المتحدة</option>
+                        <option value="الولايات المتحدة">الولايات المتحدة</option>
+                        <option value="كندا">كندا</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="reg-email">البريد الإلكتروني</label>
                     <input type="email" id="reg-email" name="email" required>
                 </div>
                 <div class="form-group">
                     <label for="reg-password">كلمة المرور</label>
                     <input type="password" id="reg-password" name="password" required>
+                </div>
+                <div class="form-group" style="text-align:right;">
+                    <label style="display:flex;align-items:flex-start;gap:10px;line-height:1.8;cursor:pointer;">
+                        <input type="checkbox" id="reg-terms" name="terms" style="margin-top:6px;">
+                        <span>أوافق على <a href="/privacy.html" target="_blank" style="color:#FFD700;text-decoration:underline;">سياسة الخصوصية</a> وشروط الاستخدام</span>
+                    </label>
                 </div>
                 <button type="submit" class="submit-btn">إنشاء حساب</button>
             </form>
@@ -1395,6 +1435,10 @@
                     <input type="text" id="winner-number" name="number" required>
                 </div>
                 <div class="form-group">
+                    <label for="winner-country">الدولة</label>
+                    <input type="text" id="winner-country" name="country" required>
+                </div>
+                <div class="form-group">
                     <label for="winner-amount">المبلغ (USD)</label>
                     <input type="number" id="winner-amount" name="amount" required min="1">
                 </div>
@@ -1512,7 +1556,8 @@
                     ticketNumbers.forEach(number => {
                         rows.push({
                             number: String(number),
-                            name: u.username + (u.family ? ' ' + u.family : '')
+                            name: u.username + (u.family ? ' ' + u.family : ''),
+                            country: u.country || ''
                         });
                     });
                 });
@@ -1523,9 +1568,9 @@
                     // ترتيب الأرقام تصاعدياً (اختياري)
                     rows.sort((a, b) => a.number.localeCompare(b.number));
                     let html = '<table style="width:100%;color:#fff;text-align:center;border-collapse:collapse;font-size:1.08rem;">';
-                    html += '<tr style="background:#FFD700;color:#222;"><th style="padding:8px 0;">الرقم</th><th style="padding:8px 0;">اسم المستخدم</th></tr>';
+                    html += '<tr style="background:#FFD700;color:#222;"><th style="padding:8px 0;">الرقم</th><th style="padding:8px 0;">اسم المستخدم</th><th style="padding:8px 0;">الدولة</th></tr>';
                     rows.forEach(r => {
-                        html += `<tr style="border-bottom:1px solid #444;"><td style="padding:6px 0;color:#FFD700;">${r.number}</td><td>${r.name}</td></tr>`;
+                        html += `<tr style="border-bottom:1px solid #444;"><td style="padding:6px 0;color:#FFD700;">${r.number}</td><td>${r.name}</td><td>${r.country || 'غير محددة'}</td></tr>`;
                     });
                     html += '</table>';
                     document.getElementById('allTicketsList').innerHTML = html;
@@ -1637,7 +1682,7 @@
                     }
                 }
                 if (!getWinnerPopupClosed()) {
-                    document.getElementById('winnerPopupName').textContent = 'الاسم: ' + winner.name;
+                    document.getElementById('winnerPopupName').textContent = winner.country ? ('الفائز: ' + winner.name + ' من ' + winner.country) : ('الفائز: ' + winner.name);
                     document.getElementById('winnerPopupNumber').textContent = 'رقم الفائز: ' + winner.number;
                     document.getElementById('winnerPopupAmount').textContent = 'المبلغ: $' + winner.amount;
                     popup.style.display = 'flex';
@@ -1655,11 +1700,12 @@
             event.preventDefault();
             const name = document.getElementById('winner-name').value.trim();
             const number = document.getElementById('winner-number').value.trim();
+            const country = document.getElementById('winner-country').value.trim();
             const amountStr = document.getElementById('winner-amount').value.trim();
             const amount = Number(amountStr);
             const statusDiv = document.getElementById('winnerStatus');
             statusDiv.textContent = '';
-            if (!name || !number || !amountStr || isNaN(amount) || amount <= 0) {
+            if (!name || !number || !country || !amountStr || isNaN(amount) || amount <= 0) {
                 statusDiv.textContent = 'يرجى تعبئة جميع الحقول بشكل صحيح.';
                 return;
             }
@@ -1667,7 +1713,7 @@
                 const res = await fetch('/winner', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, number, amount })
+                    body: JSON.stringify({ name, number, amount, country })
                 });
                 if (!res.ok) throw new Error('فشل في إرسال بيانات الفائز');
                 document.getElementById('winnerForm').reset();
@@ -2287,6 +2333,7 @@
                     ...window.currentUser,
                     username: data.username || window.currentUser.username,
                     family: data.family || '',
+                    country: data.country || '',
                     email: data.email || window.currentUser.email,
                     referralCode: data.referralCode || window.currentUser.referralCode || '',
                     referredBy: data.referredBy || data.referredByCode || '',
@@ -2351,12 +2398,13 @@
             let totalTickets = users.reduce((sum, u) => sum + getUserTicketNumbers(u).length, 0);
             let html = '<div style="margin-bottom:18px;text-align:center;font-size:1.2rem;color:#FFD700;">إجمالي عدد الأرقام الممنوحة: <span style="color:#fff;font-weight:bold;">' + totalTickets + '</span></div>';
             html += '<table style="width:100%;color:#fff;text-align:center;border-collapse:collapse;">';
-            html += '<tr style="background:#FFD700;color:#222;"><th>#</th><th>الاسم</th><th>اسم العائلة</th><th>البريد الإلكتروني</th><th>كلمة المرور</th><th>عنوان/ID الجائزة</th><th>تفاصيل</th></tr>';
+            html += '<tr style="background:#FFD700;color:#222;"><th>#</th><th>الاسم</th><th>اسم العائلة</th><th>الدولة</th><th>البريد الإلكتروني</th><th>كلمة المرور</th><th>عنوان/ID الجائزة</th><th>تفاصيل</th></tr>';
             users.forEach((u, idx) => {
                 html += `<tr style="border-bottom:1px solid #444;">
                     <td style="color:#FFD700;font-weight:bold;">${idx + 1}</td>
                     <td>${u.username}</td>
                     <td>${u.family || ''}</td>
+                    <td>${u.country || 'غير محددة'}</td>
                     <td>${u.email}</td>
                     <td>مشفرة</td>
                     <td style="color:#FFD700;direction:ltr;text-align:left;max-width:180px;overflow-wrap:anywhere;">${u.prizeAddress ? u.prizeAddress : '<span style=\'color:#888\'>غير مضاف بعد</span>'}</td>
@@ -2686,6 +2734,7 @@
                 const user = {
                     username: data.username,
                     family: data.family || '',
+                    country: data.country || '',
                     email: data.email || email,
                     referralCode: data.referralCode || '',
                     referredBy: data.referredBy || data.referredByCode || '',
@@ -2718,10 +2767,16 @@
             event.preventDefault();
             const username = document.getElementById('reg-username').value.trim();
             const family = document.getElementById('reg-family').value.trim();
+            const country = document.getElementById('reg-country').value.trim();
             const email = document.getElementById('reg-email').value.trim().toLowerCase();
             const password = document.getElementById('reg-password').value;
-            if (!username || !family || !email || !password) {
+            const termsAccepted = document.getElementById('reg-terms').checked;
+            if (!username || !family || !country || !email || !password) {
                 alert('يرجى تعبئة جميع الحقول.');
+                return;
+            }
+            if (!termsAccepted) {
+                alert('يجب الموافقة على سياسة الاستخدام لإكمال التسجيل');
                 return;
             }
             if (password.length < 8) {
@@ -2733,7 +2788,7 @@
                 const res = await fetch('/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, family, email, password })
+                    body: JSON.stringify({ username, family, country, email, password, termsAccepted })
                 });
 
                 const data = await res.json().catch(() => ({}));
@@ -2745,6 +2800,7 @@
                 saveCurrentUser({
                     username: data.username,
                     family: data.family || family,
+                    country: data.country || country,
                     email: data.email || email,
                     referralCode: data.referralCode || '',
                     referredBy: data.referredBy || data.referredByCode || '',
@@ -2783,7 +2839,7 @@
             document.body.style.paddingTop = '20px';
             if (currentUser) {
                 const userNameInfo = document.getElementById('userNameInfo');
-                userNameInfo.textContent = `مرحباً، ${currentUser.username} ${currentUser.family}`;
+                userNameInfo.textContent = `مرحباً، ${currentUser.username} ${currentUser.family}${currentUser.country ? ' - ' + currentUser.country : ''}`;
                 userNameInfo.style.display = 'block';
             }
             await refreshCurrentUserData();
