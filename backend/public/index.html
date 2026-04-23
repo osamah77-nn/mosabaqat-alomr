@@ -579,6 +579,88 @@
             font-size: 1.1rem;
         }
 
+        .tutorial-crypto-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(8, 15, 28, 0.96), rgba(19, 24, 34, 0.9));
+            border: 1px solid rgba(255, 215, 0, 0.14);
+            overflow: hidden;
+        }
+
+        .tutorial-crypto-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .tutorial-crypto-copy strong {
+            color: #FFD700;
+            font-size: 1rem;
+        }
+
+        .tutorial-crypto-copy span {
+            color: #f3f3f3;
+            font-size: 0.92rem;
+        }
+
+        .tutorial-crypto-coins {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .tutorial-coin {
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            line-height: 1;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .tutorial-coin-symbol {
+            font-size: 2rem;
+            margin-bottom: 4px;
+        }
+
+        .tutorial-coin-label {
+            font-size: 0.76rem;
+            letter-spacing: 0.5px;
+        }
+
+        .tutorial-coin-usdt {
+            background: radial-gradient(circle at 30% 30%, #5af1cf, #11856a 72%);
+            color: #fff;
+        }
+
+        .tutorial-coin-btc {
+            background: radial-gradient(circle at 30% 30%, #ffe07a, #cc8a00 74%);
+            color: #fff;
+        }
+
+        @media (max-width: 640px) {
+            .tutorial-crypto-banner {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tutorial-crypto-coins {
+                justify-content: center;
+            }
+        }
+
         .tutorial-block ul,
         .tutorial-block ol {
             margin: 0;
@@ -1354,7 +1436,6 @@
                     return;
                 }
 
-                resetManualPaymentState();
                 if (submitStatus) {
                     submitStatus.style.color = '#0c0';
                     submitStatus.textContent = 'تم إرسال طلبك بنجاح، طلبك قيد المراجعة وسوف يتم مراجعته خلال مدة أقصاها 24 ساعة';
@@ -1563,6 +1644,22 @@
 
             <div class="tutorial-block">
                 <h3>💡 فكرة المشروع</h3>
+                <div class="tutorial-crypto-banner">
+                    <div class="tutorial-crypto-copy">
+                        <strong>الدفع عبر العملات الرقمية</strong>
+                        <span>USDT و Bitcoin ضمن وسائل الدفع المعتمدة</span>
+                    </div>
+                    <div class="tutorial-crypto-coins" aria-hidden="true">
+                        <div class="tutorial-coin tutorial-coin-usdt">
+                            <div class="tutorial-coin-symbol">₮</div>
+                            <div class="tutorial-coin-label">USDT</div>
+                        </div>
+                        <div class="tutorial-coin tutorial-coin-btc">
+                            <div class="tutorial-coin-symbol">₿</div>
+                            <div class="tutorial-coin-label">BTC</div>
+                        </div>
+                    </div>
+                </div>
                 <ul>
                     <li>تسجيل المشتركين</li>
                     <li>منح كل مشترك أرقام خاصة به</li>
