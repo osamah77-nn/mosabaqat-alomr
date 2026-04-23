@@ -7,6 +7,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const crypto = require('crypto');
 
 // تعريف التطبيق مباشرة بعد الاستيراد
 const app = express();
@@ -303,8 +304,142 @@ async function connectDB() {
 }
 
 // بيانات المطور (admin) الثابتة
-const ADMIN_EMAIL = "developer@mosabaqa.com";
-const ADMIN_PASSWORD = "devpass2026";
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || 'oonnsm@osa.com').trim().toLowerCase();
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || 'Oonn770235566ww');
+const ADMIN_SESSION_COOKIE_NAME = 'admin_session';
+const USER_SESSION_COOKIE_NAME = 'user_session';
+const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const USER_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const adminSessions = new Map();
+const userSessions = new Map();
+
+function parseCookies(req) {
+    const cookieHeader = String(req.headers.cookie || '');
+    return cookieHeader.split(';').reduce((acc, part) => {
+        const [rawName, ...rawValue] = part.trim().split('=');
+        if (!rawName) return acc;
+        acc[rawName] = decodeURIComponent(rawValue.join('=') || '');
+        return acc;
+    }, {});
+}
+
+function buildSessionCookie(cookieName, token, maxAgeMs) {
+    const parts = [
+        `${cookieName}=${encodeURIComponent(token)}`,
+        'Path=/',
+        'HttpOnly',
+        'SameSite=Lax',
+        `Max-Age=${Math.max(0, Math.floor(maxAgeMs / 1000))}`
+    ];
+    if (process.env.NODE_ENV === 'production') {
+        parts.push('Secure');
+    }
+    return parts.join('; ');
+}
+
+function cleanupExpiredAdminSessions() {
+    const now = Date.now();
+    for (const [token, session] of adminSessions.entries()) {
+        if (!session || session.expiresAt <= now) {
+            adminSessions.delete(token);
+        }
+    }
+}
+
+function cleanupExpiredUserSessions() {
+    const now = Date.now();
+    for (const [token, session] of userSessions.entries()) {
+        if (!session || session.expiresAt <= now) {
+            userSessions.delete(token);
+        }
+    }
+}
+
+function createAdminSession(res) {
+    cleanupExpiredAdminSessions();
+    const token = crypto.randomBytes(32).toString('hex');
+    adminSessions.set(token, {
+        email: ADMIN_EMAIL,
+        expiresAt: Date.now() + ADMIN_SESSION_TTL_MS
+    });
+    res.append('Set-Cookie', buildSessionCookie(ADMIN_SESSION_COOKIE_NAME, token, ADMIN_SESSION_TTL_MS));
+}
+
+function clearAdminSession(req, res) {
+    const cookies = parseCookies(req);
+    const token = cookies[ADMIN_SESSION_COOKIE_NAME];
+    if (token) {
+        adminSessions.delete(token);
+    }
+    res.append('Set-Cookie', buildSessionCookie(ADMIN_SESSION_COOKIE_NAME, '', 0));
+}
+
+function createUserSession(participant, res) {
+    cleanupExpiredUserSessions();
+    const token = crypto.randomBytes(32).toString('hex');
+    userSessions.set(token, {
+        userId: String(participant._id),
+        email: String(participant.email || '').toLowerCase(),
+        username: participant.username || '',
+        expiresAt: Date.now() + USER_SESSION_TTL_MS
+    });
+    res.append('Set-Cookie', buildSessionCookie(USER_SESSION_COOKIE_NAME, token, USER_SESSION_TTL_MS));
+}
+
+function clearUserSession(req, res) {
+    const cookies = parseCookies(req);
+    const token = cookies[USER_SESSION_COOKIE_NAME];
+    if (token) {
+        userSessions.delete(token);
+    }
+    res.append('Set-Cookie', buildSessionCookie(USER_SESSION_COOKIE_NAME, '', 0));
+}
+
+function requireAdmin(req, res, next) {
+    cleanupExpiredAdminSessions();
+    const cookies = parseCookies(req);
+    const token = cookies[ADMIN_SESSION_COOKIE_NAME];
+    const session = token ? adminSessions.get(token) : null;
+
+    if (!session || session.email !== ADMIN_EMAIL || session.expiresAt <= Date.now()) {
+        if (token) {
+            adminSessions.delete(token);
+        }
+        return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى هذا المسار' });
+    }
+
+    req.adminSession = session;
+    next();
+}
+
+async function requireUser(req, res, next) {
+    cleanupExpiredUserSessions();
+    const cookies = parseCookies(req);
+    const token = cookies[USER_SESSION_COOKIE_NAME];
+    const session = token ? userSessions.get(token) : null;
+
+    if (!session || !session.userId || session.expiresAt <= Date.now()) {
+        if (token) {
+            userSessions.delete(token);
+        }
+        return res.status(401).json({ message: 'يجب تسجيل الدخول أولاً' });
+    }
+
+    if (!ObjectId.isValid(session.userId)) {
+        userSessions.delete(token);
+        return res.status(401).json({ message: 'جلسة المستخدم غير صالحة' });
+    }
+
+    const participant = await participantsCollection.findOne({ _id: new ObjectId(session.userId) });
+    if (!participant) {
+        userSessions.delete(token);
+        return res.status(401).json({ message: 'المستخدم غير موجود' });
+    }
+
+    req.userSession = session;
+    req.currentUser = participant;
+    next();
+}
 
 function getParticipantNumbers(participant) {
     if (Array.isArray(participant?.ticketNumbers)) {
@@ -459,7 +594,7 @@ app.get('/', (req, res) => {
 });
 
 // إضافة خبر جديد (POST /news)
-app.post('/news', async (req, res) => {
+app.post('/news', requireAdmin, async (req, res) => {
     try {
         console.log('📰 News post request:', req.body);
         const { title, content } = req.body;
@@ -494,7 +629,7 @@ app.get('/news', async (req, res) => {
 });
 
 // حذف خبر (DELETE /news/:id)
-app.delete('/news/:id', async (req, res) => {
+app.delete('/news/:id', requireAdmin, async (req, res) => {
     try {
         console.log('🗑️ Delete news:', req.params.id);
         const id = req.params.id;
@@ -511,7 +646,7 @@ app.delete('/news/:id', async (req, res) => {
 });
 
 // إضافة أو تحديث بيانات الفائز (POST /winner)
-app.post('/winner', async (req, res) => {
+app.post('/winner', requireAdmin, async (req, res) => {
     try {
         console.log('🏆 Winner update request:', req.body);
         const { name, number, amount, country } = req.body;
@@ -549,7 +684,7 @@ app.get('/winner', async (req, res) => {
 });
 
 // حذف بيانات الفائز (DELETE /winner)
-app.delete('/winner', async (req, res) => {
+app.delete('/winner', requireAdmin, async (req, res) => {
     try {
         console.log('🗑️ Deleting winner...');
         await winnerCollection.deleteMany({});
@@ -562,14 +697,8 @@ app.delete('/winner', async (req, res) => {
 });
 
 // نقطة إرجاع جميع المشاركين (للمطور)
-app.get('/participants', async (req, res) => {
+app.get('/participants', requireAdmin, async (req, res) => {
     try {
-        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
-        const adminPassword = String(req.headers['x-admin-password'] || '');
-        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
-            return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى قائمة المشاركين' });
-        }
-
         console.log('👥 Fetching participants...');
         const participants = await participantsCollection.find().toArray();
         console.log(`✅ Found ${participants.length} participants`);
@@ -581,14 +710,8 @@ app.get('/participants', async (req, res) => {
 });
 
 // إرجاع جميع طلبات الدفع للمطور فقط
-app.get('/payments', async (req, res) => {
+app.get('/payments', requireAdmin, async (req, res) => {
     try {
-        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
-        const adminPassword = String(req.headers['x-admin-password'] || '');
-        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
-            return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى طلبات الدفع' });
-        }
-
         console.log('💳 GET /payments request received');
 
         const payments = await paymentsCollection
@@ -639,16 +762,10 @@ app.get('/payments', async (req, res) => {
     }
 });
 
-app.post('/payments/:id/approve', async (req, res) => {
+app.post('/payments/:id/approve', requireAdmin, async (req, res) => {
     try {
         if (!ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: 'معرف طلب الدفع غير صالح' });
-        }
-
-        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
-        const adminPassword = String(req.headers['x-admin-password'] || '');
-        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
-            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات الدفع' });
         }
 
         const ticketCount = Number(req.body?.ticketCount);
@@ -746,16 +863,10 @@ app.post('/payments/:id/approve', async (req, res) => {
     }
 });
 
-app.post('/payments/:id/reject', async (req, res) => {
+app.post('/payments/:id/reject', requireAdmin, async (req, res) => {
     try {
         if (!ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: 'معرف طلب الدفع غير صالح' });
-        }
-
-        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
-        const adminPassword = String(req.headers['x-admin-password'] || '');
-        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
-            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات الدفع' });
         }
 
         const reason = String(req.body?.reason || '').trim();
@@ -811,16 +922,15 @@ app.post('/payments/:id/reject', async (req, res) => {
     }
 });
 
-app.get('/user-profile', async (req, res) => {
+app.get('/user-profile', requireUser, async (req, res) => {
     try {
+        return res.json(buildParticipantResponse(req.currentUser));
         const email = String(req.query.email || '').trim();
         if (!email) {
             return res.status(400).json({ message: 'البريد الإلكتروني مطلوب' });
         }
 
-        const participant = await participantsCollection.findOne({
-            email: { $regex: new RegExp(`^${email}$`, 'i') }
-        });
+        const participantExists = !!participant;
 
         if (!participant) {
             return res.status(404).json({ message: 'المستخدم غير موجود' });
@@ -834,9 +944,19 @@ app.get('/user-profile', async (req, res) => {
 });
 
 // تسجيل الدخول (موحد للجميع)
-app.post('/participants/tutorial-seen', async (req, res) => {
+app.post('/participants/tutorial-seen', requireUser, async (req, res) => {
     try {
-        const email = String(req.body?.email || '').trim().toLowerCase();
+        await participantsCollection.updateOne(
+            { _id: req.currentUser._id },
+            { $set: { tutorialSeen: true } }
+        );
+
+        return res.json({
+            message: 'تم حفظ حالة التعليمات',
+            tutorialSeen: true
+        });
+
+        const email = String(req.currentUser.email || '').trim().toLowerCase();
         if (!email) {
             return res.status(400).json({ message: 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…Ø·Ù„ÙˆØ¨' });
         }
@@ -864,14 +984,53 @@ app.post('/participants/tutorial-seen', async (req, res) => {
     }
 });
 
+app.post('/admin/logout', (req, res) => {
+    clearAdminSession(req, res);
+    res.json({ message: 'تم تسجيل خروج المطور' });
+});
+
+app.post('/logout', (req, res) => {
+    clearUserSession(req, res);
+    res.json({ message: 'تم تسجيل الخروج' });
+});
+
 app.post('/login', async (req, res) => {
     try {
         console.log('🔐 Login request:', { email: req.body.email || req.body.username });
         const { email, password, username } = req.body;
-        const loginIdentifier = email || username;
+        const loginIdentifier = String(email || username || '').trim().toLowerCase();
 
         if (!loginIdentifier || !password) {
             return res.status(400).json({ message: 'يرجى إدخال البريد وكلمة المرور' });
+        }
+
+        if (loginIdentifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+            clearUserSession(req, res);
+            createAdminSession(res);
+            console.log('✅ Admin login successful');
+            return res.json({
+                token: 'admin-session',
+                username: 'المطور',
+                family: '',
+                country: '',
+                email: ADMIN_EMAIL,
+                referralCode: '',
+                referredBy: '',
+                referredByCode: '',
+                referredByUserId: '',
+                referralBalance: 0,
+                registrationNumber: null,
+                ticketNumbers: [],
+                prizeAddress: '',
+                tutorialSeen: true,
+                messages: [],
+                role: 'admin'
+            });
+        }
+
+        if (loginIdentifier === ADMIN_EMAIL) {
+            clearAdminSession(req, res);
+            return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
         }
 
         const user = await participantsCollection.findOne({
@@ -889,8 +1048,11 @@ app.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
         }
 
-        const role = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
+        const role = 'user';
         console.log('✅ Login successful:', { username: user.username, role });
+        clearAdminSession(req, res);
+        clearUserSession(req, res);
+        createUserSession(user, res);
         return res.json({
             token: "user-token",
             username: user.username,
@@ -959,7 +1121,11 @@ app.post('/register', async (req, res) => {
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
-        const role = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
+        if (email.toLowerCase() === ADMIN_EMAIL) {
+            return res.status(400).json({ message: 'هذا البريد محجوز للإدارة' });
+        }
+
+        const role = 'user';
         const referralCode = await generateUniqueReferralCode();
 
         const newParticipant = {
@@ -982,6 +1148,10 @@ app.post('/register', async (req, res) => {
         };
 
         const result = await participantsCollection.insertOne(newParticipant);
+        const createdParticipant = { ...newParticipant, _id: result.insertedId };
+        clearAdminSession(req, res);
+        clearUserSession(req, res);
+        createUserSession(createdParticipant, res);
         console.log('✅ User registered successfully:', {
             username,
             family,
@@ -1012,12 +1182,12 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.post('/participants/referral', async (req, res) => {
+app.post('/participants/referral', requireUser, async (req, res) => {
     try {
-        const email = String(req.body?.email || '').trim().toLowerCase();
+        const email = String(req.currentUser.email || '').trim().toLowerCase();
         const referralCode = String(req.body?.referralCode || '').trim().toUpperCase();
 
-        if (!email || !referralCode) {
+        if (!referralCode) {
             return res.status(400).json({ message: 'البريد الإلكتروني ورمز الإحالة مطلوبان' });
         }
 
@@ -1069,15 +1239,16 @@ app.post('/participants/referral', async (req, res) => {
 });
 
 // حفظ عنوان/معرّف استلام الجائزة للمستخدم
-app.post('/participants/prize-address', async (req, res) => {
+app.post('/participants/prize-address', requireUser, async (req, res) => {
     try {
         console.log('🎁 Prize address update request:', {
             email: req.body.email,
             hasPrizeAddress: !!req.body.prizeAddress
         });
 
-        const { email, prizeAddress } = req.body;
-        if (!email || !prizeAddress) {
+        const email = String(req.currentUser.email || '').trim().toLowerCase();
+        const { prizeAddress } = req.body;
+        if (!prizeAddress) {
             return res.status(400).json({ message: 'البريد الإلكتروني وبيانات الاستلام مطلوبة' });
         }
 
@@ -1104,9 +1275,9 @@ app.post('/participants/prize-address', async (req, res) => {
     }
 });
 
-app.post('/referral-withdraw-requests', async (req, res) => {
+app.post('/referral-withdraw-requests', requireUser, async (req, res) => {
     try {
-        const email = String(req.body?.email || '').trim().toLowerCase();
+        const email = String(req.currentUser.email || '').trim().toLowerCase();
         if (!email) {
             return res.status(400).json({ message: 'البريد الإلكتروني مطلوب' });
         }
@@ -1164,14 +1335,8 @@ app.post('/referral-withdraw-requests', async (req, res) => {
     }
 });
 
-app.get('/referral-withdraw-requests', async (req, res) => {
+app.get('/referral-withdraw-requests', requireAdmin, async (req, res) => {
     try {
-        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
-        const adminPassword = String(req.headers['x-admin-password'] || '');
-        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
-            return res.status(403).json({ message: 'غير مصرح لك بالوصول إلى طلبات سحب أرباح الإحالة' });
-        }
-
         const requests = await referralWithdrawRequestsCollection.find(
             {},
             {
@@ -1209,16 +1374,10 @@ app.get('/referral-withdraw-requests', async (req, res) => {
     }
 });
 
-app.post('/referral-withdraw-requests/:id/approve', async (req, res) => {
+app.post('/referral-withdraw-requests/:id/approve', requireAdmin, async (req, res) => {
     try {
         if (!ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: 'معرف طلب السحب غير صالح' });
-        }
-
-        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
-        const adminPassword = String(req.headers['x-admin-password'] || '');
-        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
-            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات سحب أرباح الإحالة' });
         }
 
         const request = await referralWithdrawRequestsCollection.findOne({ _id: new ObjectId(req.params.id) });
@@ -1282,16 +1441,10 @@ app.post('/referral-withdraw-requests/:id/approve', async (req, res) => {
     }
 });
 
-app.post('/referral-withdraw-requests/:id/reject', async (req, res) => {
+app.post('/referral-withdraw-requests/:id/reject', requireAdmin, async (req, res) => {
     try {
         if (!ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ message: 'معرف طلب السحب غير صالح' });
-        }
-
-        const adminEmail = String(req.headers['x-admin-email'] || '').toLowerCase();
-        const adminPassword = String(req.headers['x-admin-password'] || '');
-        if (adminEmail !== ADMIN_EMAIL.toLowerCase() || adminPassword !== ADMIN_PASSWORD) {
-            return res.status(403).json({ message: 'غير مصرح لك بإدارة طلبات سحب أرباح الإحالة' });
         }
 
         const reason = String(req.body?.reason || '').trim();
@@ -1349,7 +1502,7 @@ app.post('/referral-withdraw-requests/:id/reject', async (req, res) => {
 });
 
 // حفظ طلب دفع يدوي جديد
-app.post('/submit-payment', function (req, res) {
+app.post('/submit-payment', requireUser, function (req, res) {
     paymentUpload.single('proofImage')(req, res, async function (uploadErr) {
         if (uploadErr) {
             if (uploadErr instanceof multer.MulterError && uploadErr.code === 'LIMIT_FILE_SIZE') {
@@ -1364,14 +1517,14 @@ app.post('/submit-payment', function (req, res) {
 
         try {
             const {
-                username,
-                email,
                 amount,
                 quantity,
                 paymentMethod,
                 paymentTarget
             } = req.body || {};
             const proofImageFile = req.file || null;
+            const username = String(req.currentUser?.username || '').trim();
+            const email = String(req.currentUser?.email || '').trim().toLowerCase();
 
             console.log('💳 POST /submit-payment received', {
                 username: username || '',

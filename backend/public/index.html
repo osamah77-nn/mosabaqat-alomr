@@ -1329,8 +1329,6 @@
 
             try {
                 const formData = new FormData();
-                formData.append('username', window.currentUser.username || '');
-                formData.append('email', window.currentUser.email || '');
                 formData.append('amount', String(getCurrentPurchaseAmount()));
                 formData.append('quantity', String(getCurrentPurchaseQuantity()));
                 formData.append('paymentMethod', selectedPaymentMethod);
@@ -1394,7 +1392,6 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email: window.currentUser.email,
                         prizeAddress: val
                     })
                 });
@@ -1806,32 +1803,101 @@
                     }
                 }
 
+                function clearNode(node) {
+                    if (!node) return;
+                    while (node.firstChild) {
+                        node.removeChild(node.firstChild);
+                    }
+                }
+
+                function createStyledElement(tag, text, styleText) {
+                    const el = document.createElement(tag);
+                    if (styleText) el.style.cssText = styleText;
+                    if (text !== undefined && text !== null) el.textContent = String(text);
+                    return el;
+                }
+
+                function setCenteredMessage(container, text, color) {
+                    clearNode(container);
+                    const message = createStyledElement('div', text, `color:${color || '#fff'};text-align:center;`);
+                    container.appendChild(message);
+                }
+
+                function createInfoRow(labelText, valueText, options) {
+                    const config = options || {};
+                    const row = createStyledElement('div', '', config.rowStyle || 'margin-bottom:8px;');
+                    const label = document.createElement('b');
+                    label.textContent = labelText + ':';
+                    row.appendChild(label);
+                    row.appendChild(document.createTextNode(' '));
+                    const valueTag = config.valueTag || 'span';
+                    const value = createStyledElement(
+                        valueTag,
+                        valueText === undefined || valueText === null || valueText === '' ? (config.emptyText || '') : valueText,
+                        config.valueStyle || ''
+                    );
+                    row.appendChild(value);
+                    return row;
+                }
+
+                function createAdminActionButton(text, backgroundColor, textColor, onClick) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'app-btn';
+                    button.style.padding = '10px 18px';
+                    button.style.minWidth = 'unset';
+                    if (backgroundColor) button.style.background = backgroundColor;
+                    if (textColor) button.style.color = textColor;
+                    button.textContent = text;
+                    button.onclick = onClick;
+                    return button;
+                }
+
+                function getSafePaymentProofPath(path) {
+                    const value = String(path || '').trim();
+                    return value.startsWith('/uploads/payments/') ? value : '';
+                }
+
                 async function renderAllTicketsList() {
-                const users = await fetchParticipants();
-                let rows = [];
-                users.forEach(u => {
-                    const ticketNumbers = getUserTicketNumbers(u);
-                    ticketNumbers.forEach(number => {
-                        rows.push({
-                            number: String(number),
-                            name: u.username + (u.family ? ' ' + u.family : ''),
-                            country: u.country || ''
+                    const container = document.getElementById('allTicketsList');
+                    const users = await fetchParticipants();
+                    let rows = [];
+                    users.forEach(u => {
+                        const ticketNumbers = getUserTicketNumbers(u);
+                        ticketNumbers.forEach(number => {
+                            rows.push({
+                                number: String(number),
+                                name: u.username + (u.family ? ' ' + u.family : ''),
+                                country: u.country || ''
+                            });
                         });
                     });
-                });
                     if (rows.length === 0) {
-                        document.getElementById('allTicketsList').innerHTML = '<div style="color:#FFD700;text-align:center;">لا توجد أرقام ممنوحة بعد.</div>';
+                        setCenteredMessage(container, 'لا توجد أرقام ممنوحة بعد.', '#FFD700');
                         return;
                     }
-                    // ترتيب الأرقام تصاعدياً (اختياري)
                     rows.sort((a, b) => a.number.localeCompare(b.number));
-                    let html = '<table style="width:100%;color:#fff;text-align:center;border-collapse:collapse;font-size:1.08rem;">';
-                    html += '<tr style="background:#FFD700;color:#222;"><th style="padding:8px 0;">الرقم</th><th style="padding:8px 0;">اسم المستخدم</th><th style="padding:8px 0;">الدولة</th></tr>';
-                    rows.forEach(r => {
-                        html += `<tr style="border-bottom:1px solid #444;"><td style="padding:6px 0;color:#FFD700;">${r.number}</td><td>${r.name}</td><td>${r.country || 'غير محددة'}</td></tr>`;
+                    clearNode(container);
+                    const table = createStyledElement('table', '', 'width:100%;color:#fff;text-align:center;border-collapse:collapse;font-size:1.08rem;');
+                    const headerRow = document.createElement('tr');
+                    headerRow.style.cssText = 'background:#FFD700;color:#222;';
+                    ['الرقم', 'اسم المستخدم', 'الدولة'].forEach(function (title) {
+                        const th = createStyledElement('th', title, 'padding:8px 0;');
+                        headerRow.appendChild(th);
                     });
-                    html += '</table>';
-                    document.getElementById('allTicketsList').innerHTML = html;
+                    table.appendChild(headerRow);
+                    rows.forEach(function (row) {
+                        const tr = document.createElement('tr');
+                        tr.style.cssText = 'border-bottom:1px solid #444;';
+                        const numberCell = createStyledElement('td', row.number, 'padding:6px 0;color:#FFD700;');
+                        const nameCell = createStyledElement('td', row.name, '');
+                        const countryCell = createStyledElement('td', row.country || 'غير محددة', '');
+                        tr.appendChild(numberCell);
+                        tr.appendChild(nameCell);
+                        tr.appendChild(countryCell);
+                        table.appendChild(tr);
+                    });
+                    container.appendChild(table);
                 }
 
                 // تحديث القائمة تلقائياً عند أي تغيير في المستخدمين أو الأرقام
@@ -2008,33 +2074,49 @@
                 const res = await fetch('/news');
                 if (!res.ok) throw new Error('خطأ في جلب الأخبار');
                 const news = await res.json();
-                // عرض الأخبار في واجهة المستخدمين
                 const newsContent = document.getElementById('newsContent');
+                clearNode(newsContent);
                 if (news.length === 0) {
-                    newsContent.innerHTML = 'لا توجد أخبار حالياً.';
+                    newsContent.textContent = 'لا توجد أخبار حالياً.';
                 } else {
-                    newsContent.innerHTML = news.map(item => `<div style='margin-bottom:18px;'><div style='font-weight:bold;color:#d19a00;font-size:0.88rem;'>${item.title}</div><div style='font-size:1.95rem;color:#222;'>${item.content}</div><div style='font-size:0.85rem;color:#888;margin-top:4px;'>${new Date(item.date).toLocaleString('ar-EG')}</div></div>`).join('');
+                    news.forEach(function (item) {
+                        const wrapper = createStyledElement('div', '', 'margin-bottom:18px;');
+                        wrapper.appendChild(createStyledElement('div', item.title || '', 'font-weight:bold;color:#d19a00;font-size:0.88rem;'));
+                        wrapper.appendChild(createStyledElement('div', item.content || '', 'font-size:1.95rem;color:#222;'));
+                        wrapper.appendChild(createStyledElement('div', item.date ? new Date(item.date).toLocaleString('ar-EG') : '', 'font-size:0.85rem;color:#888;margin-top:4px;'));
+                        newsContent.appendChild(wrapper);
+                    });
                 }
-                // عرض الأخبار في صفحة المطور مع زر حذف
                 const adminNewsContent = document.getElementById('adminNewsContent');
                 if (adminNewsContent) {
+                    clearNode(adminNewsContent);
                     if (news.length === 0) {
-                        adminNewsContent.innerHTML = 'لا توجد أخبار حالياً.';
+                        adminNewsContent.textContent = 'لا توجد أخبار حالياً.';
                     } else {
-                        adminNewsContent.innerHTML = news.map(item =>
-                            `<div style='margin-bottom:18px; border-bottom:1px solid #eee; padding-bottom:10px;'>
-                                <div style='font-weight:bold;color:#d19a00;'>${item.title}</div>
-                                <div style='font-size:0.98rem;'>${item.content}</div>
-                                <div style='font-size:0.85rem;color:#888;margin-top:4px;'>${new Date(item.date).toLocaleString('ar-EG')}</div>
-                                <button onclick="deleteNews('${item.id}')" style='margin-top:6px;background:#c00;color:#fff;border:none;padding:6px 18px;border-radius:8px;cursor:pointer;font-size:0.95rem;'>حذف</button>
-                            </div>`
-                        ).join('');
+                        news.forEach(function (item) {
+                            const wrapper = createStyledElement('div', '', 'margin-bottom:18px;border-bottom:1px solid #eee;padding-bottom:10px;');
+                            wrapper.appendChild(createStyledElement('div', item.title || '', 'font-weight:bold;color:#d19a00;'));
+                            wrapper.appendChild(createStyledElement('div', item.content || '', 'font-size:0.98rem;'));
+                            wrapper.appendChild(createStyledElement('div', item.date ? new Date(item.date).toLocaleString('ar-EG') : '', 'font-size:0.85rem;color:#888;margin-top:4px;'));
+                            const deleteButton = createStyledElement('button', 'حذف', 'margin-top:6px;background:#c00;color:#fff;border:none;padding:6px 18px;border-radius:8px;cursor:pointer;font-size:0.95rem;');
+                            deleteButton.type = 'button';
+                            deleteButton.onclick = function () {
+                                deleteNews(String(item.id || ''));
+                            };
+                            wrapper.appendChild(deleteButton);
+                            adminNewsContent.appendChild(wrapper);
+                        });
                     }
                 }
             } catch (e) {
-                document.getElementById('newsContent').innerHTML = 'تعذر تحميل الأخبار.';
+                const newsContent = document.getElementById('newsContent');
+                clearNode(newsContent);
+                newsContent.textContent = 'تعذر تحميل الأخبار.';
                 const adminNewsContent = document.getElementById('adminNewsContent');
-                if (adminNewsContent) adminNewsContent.innerHTML = 'تعذر تحميل الأخبار.';
+                if (adminNewsContent) {
+                    clearNode(adminNewsContent);
+                    adminNewsContent.textContent = 'تعذر تحميل الأخبار.';
+                }
             }
         }
 
@@ -2176,10 +2258,6 @@
             setInterval(updateCounterDisplay, 1000);
             updateCounterDisplay();
         })();
-        // بيانات دخول المطور (يمكنك تغييرها كما تريد)
-        const ADMIN_EMAIL = "developer@mosabaqa.com";
-        const ADMIN_PASSWORD = "devpass2026";
-
         function openModal(modalId) {
             document.getElementById(modalId).style.display = "block";
         }
@@ -2201,12 +2279,7 @@
                 throw new Error('غير مصرح');
             }
 
-            const response = await fetch('/participants', {
-                headers: {
-                    'x-admin-email': ADMIN_EMAIL,
-                    'x-admin-password': ADMIN_PASSWORD
-                }
-            });
+            const response = await fetch('/participants');
             if (!response.ok) {
                 throw new Error('فشل جلب المشاركين');
             }
@@ -2220,12 +2293,7 @@
                 throw new Error('غير مصرح');
             }
 
-            const response = await fetch('/payments', {
-                headers: {
-                    'x-admin-email': ADMIN_EMAIL,
-                    'x-admin-password': ADMIN_PASSWORD
-                }
-            });
+            const response = await fetch('/payments');
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('Payment fetch failed:', response.status, errorData);
@@ -2242,12 +2310,7 @@
                 throw new Error('غير مصرح');
             }
 
-            const response = await fetch('/referral-withdraw-requests', {
-                headers: {
-                    'x-admin-email': ADMIN_EMAIL,
-                    'x-admin-password': ADMIN_PASSWORD
-                }
-            });
+            const response = await fetch('/referral-withdraw-requests');
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.message || 'فشل جلب طلبات سحب أرباح الإحالة');
@@ -2291,7 +2354,7 @@
                 await fetch('/participants/tutorial-seen', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: currentUser.email })
+                    body: JSON.stringify({})
                 });
             } catch { }
 
@@ -2391,7 +2454,7 @@
                 const response = await fetch('/referral-withdraw-requests', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: currentUser.email })
+                    body: JSON.stringify({})
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
@@ -2460,10 +2523,7 @@
                 const res = await fetch('/participants/referral', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: currentUser.email,
-                        referralCode
-                    })
+                    body: JSON.stringify({ referralCode })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
@@ -2498,16 +2558,21 @@
 
             if (!Array.isArray(messages) || !messages.length) {
                 container.style.display = 'none';
-                container.innerHTML = '';
+                clearNode(container);
                 return;
             }
 
             container.style.display = 'block';
-            container.innerHTML = messages.slice().reverse().map(function (message) {
+            clearNode(container);
+            messages.slice().reverse().forEach(function (message) {
                 const text = message && message.text ? message.text : '';
                 const createdAt = message && message.createdAt ? new Date(message.createdAt).toLocaleString('ar-EG') : '';
-                return `<div style="margin-bottom:10px;"><div style="color:#FFD700;font-weight:bold;">إشعار</div><div>${text}</div><div style="font-size:0.85rem;color:#ccc;margin-top:4px;">${createdAt}</div></div>`;
-            }).join('');
+                const wrapper = createStyledElement('div', '', 'margin-bottom:10px;');
+                wrapper.appendChild(createStyledElement('div', 'إشعار', 'color:#FFD700;font-weight:bold;'));
+                wrapper.appendChild(createStyledElement('div', text, ''));
+                wrapper.appendChild(createStyledElement('div', createdAt, 'font-size:0.85rem;color:#ccc;margin-top:4px;'));
+                container.appendChild(wrapper);
+            });
         }
 
         function getSeenUserMessageMap() {
@@ -2582,8 +2647,12 @@
             }
 
             try {
-                const response = await fetch('/user-profile?email=' + encodeURIComponent(window.currentUser.email));
+                const response = await fetch('/user-profile');
                 if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        saveCurrentUser(null);
+                        return null;
+                    }
                     return window.currentUser;
                 }
                 const data = await response.json();
@@ -2609,7 +2678,7 @@
                 const welcomeMessagesBox = document.getElementById('userMessagesBox');
                 if (welcomeMessagesBox) {
                     welcomeMessagesBox.style.display = 'none';
-                    welcomeMessagesBox.innerHTML = '';
+                    clearNode(welcomeMessagesBox);
                 }
                 renderUserMessages(updatedUser.messages, 'ticketsMessagesBox');
                 showNewUserMessagePopup(updatedUser.email, updatedUser.messages);
@@ -2632,7 +2701,10 @@
             fetchNews(); // عند دخول المطور، جلب الأخبار أيضاً
         }
 
-        function logoutAdmin() {
+        async function logoutAdmin() {
+            try {
+                await fetch('/admin/logout', { method: 'POST' });
+            } catch (e) { }
             isAdminSession = false;
             stopAdminAutoRefresh();
             document.getElementById('adminPage').style.display = 'none';
@@ -2645,32 +2717,61 @@
         }
 
         async function renderAdminUsers() {
+            const container = document.getElementById('adminUsersTable');
             let users = [];
             try {
                 users = await fetchParticipants();
             } catch (e) {
-                document.getElementById('adminUsersTable').innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل المستخدمين.</div>';
+                setCenteredMessage(container, 'تعذر تحميل المستخدمين.', '#fff');
                 return;
             }
 
             let totalTickets = users.reduce((sum, u) => sum + getUserTicketNumbers(u).length, 0);
-            let html = '<div style="margin-bottom:18px;text-align:center;font-size:1.2rem;color:#FFD700;">إجمالي عدد الأرقام الممنوحة: <span style="color:#fff;font-weight:bold;">' + totalTickets + '</span></div>';
-            html += '<table style="width:100%;color:#fff;text-align:center;border-collapse:collapse;">';
-            html += '<tr style="background:#FFD700;color:#222;"><th>#</th><th>الاسم</th><th>اسم العائلة</th><th>الدولة</th><th>البريد الإلكتروني</th><th>كلمة المرور</th><th>عنوان/ID الجائزة</th><th>تفاصيل</th></tr>';
-            users.forEach((u, idx) => {
-                html += `<tr style="border-bottom:1px solid #444;">
-                    <td style="color:#FFD700;font-weight:bold;">${idx + 1}</td>
-                    <td>${u.username}</td>
-                    <td>${u.family || ''}</td>
-                    <td>${u.country || 'غير محددة'}</td>
-                    <td>${u.email}</td>
-                    <td>مشفرة</td>
-                    <td style="color:#FFD700;direction:ltr;text-align:left;max-width:180px;overflow-wrap:anywhere;">${u.prizeAddress ? u.prizeAddress : '<span style=\'color:#888\'>غير مضاف بعد</span>'}</td>
-                    <td><button onclick="showUserTicketsAdmin('${u.email.replace(/'/g, '')}')" style="background:#FFD700;color:#222;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1rem;">عرض الأرقام</button></td>
-                </tr>`;
+            clearNode(container);
+
+            const summary = createStyledElement('div', '', 'margin-bottom:18px;text-align:center;font-size:1.2rem;color:#FFD700;');
+            summary.appendChild(document.createTextNode('إجمالي عدد الأرقام الممنوحة: '));
+            summary.appendChild(createStyledElement('span', totalTickets, 'color:#fff;font-weight:bold;'));
+            container.appendChild(summary);
+
+            const table = createStyledElement('table', '', 'width:100%;color:#fff;text-align:center;border-collapse:collapse;');
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background:#FFD700;color:#222;';
+            ['#', 'الاسم', 'اسم العائلة', 'الدولة', 'البريد الإلكتروني', 'كلمة المرور', 'عنوان/ID الجائزة', 'تفاصيل'].forEach(function (title) {
+                headerRow.appendChild(createStyledElement('th', title, ''));
             });
-            html += '</table>';
-            document.getElementById('adminUsersTable').innerHTML = html;
+            table.appendChild(headerRow);
+
+            users.forEach(function (user, idx) {
+                const row = document.createElement('tr');
+                row.style.cssText = 'border-bottom:1px solid #444;';
+                row.appendChild(createStyledElement('td', idx + 1, 'color:#FFD700;font-weight:bold;'));
+                row.appendChild(createStyledElement('td', user.username || '', ''));
+                row.appendChild(createStyledElement('td', user.family || '', ''));
+                row.appendChild(createStyledElement('td', user.country || 'غير محددة', ''));
+                row.appendChild(createStyledElement('td', user.email || '', ''));
+                row.appendChild(createStyledElement('td', 'مشفرة', ''));
+
+                const prizeAddressCell = createStyledElement('td', '', 'color:#FFD700;direction:ltr;text-align:left;max-width:180px;overflow-wrap:anywhere;');
+                if (user.prizeAddress) {
+                    prizeAddressCell.textContent = user.prizeAddress;
+                } else {
+                    prizeAddressCell.appendChild(createStyledElement('span', 'غير مضاف بعد', 'color:#888;'));
+                }
+                row.appendChild(prizeAddressCell);
+
+                const actionCell = document.createElement('td');
+                const detailsButton = createStyledElement('button', 'عرض الأرقام', 'background:#FFD700;color:#222;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1rem;');
+                detailsButton.type = 'button';
+                detailsButton.onclick = function () {
+                    showUserTicketsAdmin(String(user.email || ''));
+                };
+                actionCell.appendChild(detailsButton);
+                row.appendChild(actionCell);
+                table.appendChild(row);
+            });
+
+            container.appendChild(table);
         }
 
         async function renderPaymentRequests() {
@@ -2682,12 +2783,12 @@
             try {
                 payments = await fetchPayments();
             } catch (e) {
-                activeContainer.innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل طلبات الدفع.</div>';
-                processedContainer.innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل سجل الطلبات.</div>';
+                setCenteredMessage(activeContainer, 'تعذر تحميل طلبات الدفع.', '#fff');
+                setCenteredMessage(processedContainer, 'تعذر تحميل سجل الطلبات.', '#fff');
                 return;
             }
 
-            function renderPaymentCard(payment) {
+            function buildPaymentCard(payment) {
                 const statusText = payment.status === 'pending'
                     ? 'قيد الانتظار'
                     : payment.status === 'approved'
@@ -2696,40 +2797,58 @@
                             ? 'مرفوض'
                             : payment.status;
                 const createdAt = payment.createdAt ? new Date(payment.createdAt).toLocaleString('ar-EG') : '';
-                const actionsHtml = payment.status === 'pending'
-                    ? `<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                            <button type="button" class="app-btn" style="padding:10px 18px;min-width:unset;" onclick="approvePaymentRequest('${payment.id}')">✔ قبول</button>
-                            <button type="button" class="app-btn" style="padding:10px 18px;min-width:unset;background:#c00;color:#fff;" onclick="rejectPaymentRequest('${payment.id}')">❌ رفض</button>
-                       </div>`
-                    : '<div style="text-align:center;color:#888;">تمت معالجة هذا الطلب</div>';
-                const extraInfo = payment.status === 'rejected' && payment.rejectionReason
-                    ? `<div style="margin-bottom:8px;"><b>سبب الرفض:</b> ${payment.rejectionReason}</div>`
-                    : (payment.status === 'approved' && payment.grantedCount
-                        ? `<div style="margin-bottom:8px;"><b>الأرقام الممنوحة:</b> ${payment.grantedCount}</div>`
-                        : '');
-                const proofImageHtml = payment.proofImage
-                    ? `<img src="${payment.proofImage}" alt="Payment Proof" style="width:100%;max-height:320px;object-fit:contain;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);">`
-                    : (payment.proofImageDeletedAt
-                        ? `<div style="padding:20px 12px;text-align:center;color:#bbb;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);">تم حذف صورة الإثبات بعد معالجة الطلب</div>`
-                        : `<div style="padding:20px 12px;text-align:center;color:#888;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);">لا توجد صورة متاحة</div>`);
-                return `
-                    <div style="background:#181818;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,0.18);text-align:right;">
-                        <div style="color:#FFD700;font-size:1.15rem;font-weight:bold;margin-bottom:12px;">${payment.username || ''}</div>
-                        <div style="margin-bottom:8px;"><b>الإيميل:</b> ${payment.email || ''}</div>
-                        <div style="margin-bottom:8px;"><b>المبلغ:</b> ${payment.amount || 0} USDT</div>
-                        <div style="margin-bottom:8px;"><b>العدد:</b> ${payment.quantity || 0}</div>
-                        <div style="margin-bottom:8px;"><b>طريقة الدفع:</b> ${payment.paymentMethod || ''}</div>
-                        <div style="margin-bottom:8px;"><b>العنوان الذي تم التحويل له:</b> <span style="color:#FFD700;direction:ltr;text-align:left;display:inline-block;overflow-wrap:anywhere;">${payment.paymentTarget || ''}</span></div>
-                        <div style="margin-bottom:8px;"><b>الحالة:</b> <span style="color:#FFD700;">${statusText}</span></div>
-                        ${extraInfo}
-                        <div style="margin-bottom:14px;"><b>تاريخ الطلب:</b> ${createdAt}</div>
-                        <div style="margin-bottom:14px;">
-                            <div style="margin-bottom:8px;font-weight:bold;">الصورة</div>
-                            ${proofImageHtml}
-                        </div>
-                        ${actionsHtml}
-                    </div>
-                `;
+                const card = createStyledElement('div', '', 'background:#181818;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,0.18);text-align:right;');
+                card.appendChild(createStyledElement('div', payment.username || '', 'color:#FFD700;font-size:1.15rem;font-weight:bold;margin-bottom:12px;'));
+                card.appendChild(createInfoRow('الإيميل', payment.email || ''));
+                card.appendChild(createInfoRow('المبلغ', (payment.amount || 0) + ' USDT'));
+                card.appendChild(createInfoRow('العدد', payment.quantity || 0));
+                card.appendChild(createInfoRow('طريقة الدفع', payment.paymentMethod || ''));
+                card.appendChild(createInfoRow('العنوان الذي تم التحويل له', payment.paymentTarget || '', {
+                    valueStyle: 'color:#FFD700;direction:ltr;text-align:left;display:inline-block;overflow-wrap:anywhere;'
+                }));
+                card.appendChild(createInfoRow('الحالة', statusText, {
+                    valueStyle: 'color:#FFD700;'
+                }));
+                if (payment.status === 'rejected' && payment.rejectionReason) {
+                    card.appendChild(createInfoRow('سبب الرفض', payment.rejectionReason));
+                } else if (payment.status === 'approved' && payment.grantedCount) {
+                    card.appendChild(createInfoRow('الأرقام الممنوحة', payment.grantedCount));
+                }
+                card.appendChild(createInfoRow('تاريخ الطلب', createdAt, {
+                    rowStyle: 'margin-bottom:14px;'
+                }));
+
+                const imageSection = createStyledElement('div', '', 'margin-bottom:14px;');
+                imageSection.appendChild(createStyledElement('div', 'الصورة', 'margin-bottom:8px;font-weight:bold;'));
+                const safeImagePath = getSafePaymentProofPath(payment.proofImage);
+                if (safeImagePath) {
+                    const img = document.createElement('img');
+                    img.src = safeImagePath;
+                    img.alt = 'Payment Proof';
+                    img.style.cssText = 'width:100%;max-height:320px;object-fit:contain;background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);';
+                    imageSection.appendChild(img);
+                } else {
+                    const imageMessage = payment.proofImageDeletedAt
+                        ? 'تم حذف صورة الإثبات بعد معالجة الطلب'
+                        : 'لا توجد صورة متاحة';
+                    const imageColor = payment.proofImageDeletedAt ? '#bbb' : '#888';
+                    imageSection.appendChild(createStyledElement('div', imageMessage, `padding:20px 12px;text-align:center;color:${imageColor};background:#111;border-radius:12px;border:1px solid rgba(255,215,0,0.2);`));
+                }
+                card.appendChild(imageSection);
+
+                if (payment.status === 'pending') {
+                    const actions = createStyledElement('div', '', 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;');
+                    actions.appendChild(createAdminActionButton('✔ قبول', '', '', function () {
+                        approvePaymentRequest(String(payment.id || ''));
+                    }));
+                    actions.appendChild(createAdminActionButton('❌ رفض', '#c00', '#fff', function () {
+                        rejectPaymentRequest(String(payment.id || ''));
+                    }));
+                    card.appendChild(actions);
+                } else {
+                    card.appendChild(createStyledElement('div', 'تمت معالجة هذا الطلب', 'text-align:center;color:#888;'));
+                }
+                return card;
             }
 
             const activePayments = payments.filter(function (payment) {
@@ -2739,13 +2858,23 @@
                 return payment.status === 'approved' || payment.status === 'rejected';
             });
 
-            activeContainer.innerHTML = activePayments.length
-                ? activePayments.map(renderPaymentCard).join('')
-                : '<div style="color:#fff;text-align:center;">لا توجد طلبات معلقة حالياً.</div>';
+            clearNode(activeContainer);
+            if (activePayments.length) {
+                activePayments.forEach(function (payment) {
+                    activeContainer.appendChild(buildPaymentCard(payment));
+                });
+            } else {
+                setCenteredMessage(activeContainer, 'لا توجد طلبات معلقة حالياً.', '#fff');
+            }
 
-            processedContainer.innerHTML = processedPayments.length
-                ? processedPayments.map(renderPaymentCard).join('')
-                : '<div style="color:#fff;text-align:center;">لا توجد طلبات معالجة حالياً.</div>';
+            clearNode(processedContainer);
+            if (processedPayments.length) {
+                processedPayments.forEach(function (payment) {
+                    processedContainer.appendChild(buildPaymentCard(payment));
+                });
+            } else {
+                setCenteredMessage(processedContainer, 'لا توجد طلبات معالجة حالياً.', '#fff');
+            }
         }
 
         async function renderReferralWithdrawRequests() {
@@ -2756,16 +2885,17 @@
             try {
                 requests = await fetchReferralWithdrawRequests();
             } catch (e) {
-                container.innerHTML = '<div style="color:#fff;text-align:center;">تعذر تحميل طلبات سحب أرباح الإحالة.</div>';
+                setCenteredMessage(container, 'تعذر تحميل طلبات سحب أرباح الإحالة.', '#fff');
                 return;
             }
 
             if (!requests.length) {
-                container.innerHTML = '<div style="color:#fff;text-align:center;">لا توجد طلبات سحب أرباح إحالة حالياً.</div>';
+                setCenteredMessage(container, 'لا توجد طلبات سحب أرباح إحالة حالياً.', '#fff');
                 return;
             }
 
-            container.innerHTML = requests.map(function (request) {
+            clearNode(container);
+            requests.forEach(function (request) {
                 const statusText = request.status === 'pending'
                     ? 'قيد الانتظار'
                     : request.status === 'approved'
@@ -2773,31 +2903,43 @@
                         : request.status === 'rejected'
                             ? 'مرفوض'
                             : request.status;
-                const actionsHtml = request.status === 'pending'
-                    ? `<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                            <button type="button" class="app-btn" style="padding:10px 18px;min-width:unset;" onclick="approveReferralWithdrawRequest('${request.id}')">✔ قبول</button>
-                            <button type="button" class="app-btn" style="padding:10px 18px;min-width:unset;background:#c00;color:#fff;" onclick="rejectReferralWithdrawRequest('${request.id}')">❌ رفض</button>
-                       </div>`
-                    : '<div style="text-align:center;color:#888;">تمت معالجة هذا الطلب</div>';
-                const rejectionHtml = request.status === 'rejected' && request.rejectionReason
-                    ? `<div style="margin-bottom:8px;"><b>سبب الرفض:</b> ${request.rejectionReason}</div>`
-                    : '';
-                return `
-                    <div style="background:#181818;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,0.18);text-align:right;">
-                        <div style="color:#FFD700;font-size:1.15rem;font-weight:bold;margin-bottom:12px;">${request.username || ''}</div>
-                        <div style="margin-bottom:8px;"><b>العائلة:</b> ${request.family || ''}</div>
-                        <div style="margin-bottom:8px;"><b>الإيميل:</b> ${request.email || ''}</div>
-                        <div style="margin-bottom:8px;"><b>رمز الإحالة:</b> <span style="color:#FFD700;direction:ltr;">${request.referralCode || ''}</span></div>
-                        <div style="margin-bottom:8px;"><b>الرصيد الحالي:</b> ${Number(request.referralBalance || 0).toFixed(2)} USDT</div>
-                        <div style="margin-bottom:8px;"><b>المبلغ المطلوب:</b> ${Number(request.requestedAmount || 0).toFixed(2)} USDT</div>
-                        <div style="margin-bottom:8px;"><b>عنوان الاستلام:</b> <span style="color:#FFD700;direction:ltr;text-align:left;display:inline-block;overflow-wrap:anywhere;">${request.prizeAddress || ''}</span></div>
-                        <div style="margin-bottom:8px;"><b>الحالة:</b> <span style="color:#FFD700;">${statusText}</span></div>
-                        ${rejectionHtml}
-                        <div style="margin-bottom:14px;"><b>التاريخ:</b> ${request.createdAt ? new Date(request.createdAt).toLocaleString('ar-EG') : ''}</div>
-                        ${actionsHtml}
-                    </div>
-                `;
-            }).join('');
+                const card = createStyledElement('div', '', 'background:#181818;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,0.18);text-align:right;');
+                card.appendChild(createStyledElement('div', request.username || '', 'color:#FFD700;font-size:1.15rem;font-weight:bold;margin-bottom:12px;'));
+                card.appendChild(createInfoRow('العائلة', request.family || ''));
+                card.appendChild(createInfoRow('الإيميل', request.email || ''));
+                card.appendChild(createInfoRow('رمز الإحالة', request.referralCode || '', {
+                    valueStyle: 'color:#FFD700;direction:ltr;'
+                }));
+                card.appendChild(createInfoRow('الرصيد الحالي', Number(request.referralBalance || 0).toFixed(2) + ' USDT'));
+                card.appendChild(createInfoRow('المبلغ المطلوب', Number(request.requestedAmount || 0).toFixed(2) + ' USDT'));
+                card.appendChild(createInfoRow('عنوان الاستلام', request.prizeAddress || '', {
+                    valueStyle: 'color:#FFD700;direction:ltr;text-align:left;display:inline-block;overflow-wrap:anywhere;'
+                }));
+                card.appendChild(createInfoRow('الحالة', statusText, {
+                    valueStyle: 'color:#FFD700;'
+                }));
+                if (request.status === 'rejected' && request.rejectionReason) {
+                    card.appendChild(createInfoRow('سبب الرفض', request.rejectionReason));
+                }
+                card.appendChild(createInfoRow('التاريخ', request.createdAt ? new Date(request.createdAt).toLocaleString('ar-EG') : '', {
+                    rowStyle: 'margin-bottom:14px;'
+                }));
+
+                if (request.status === 'pending') {
+                    const actions = createStyledElement('div', '', 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;');
+                    actions.appendChild(createAdminActionButton('✔ قبول', '', '', function () {
+                        approveReferralWithdrawRequest(String(request.id || ''));
+                    }));
+                    actions.appendChild(createAdminActionButton('❌ رفض', '#c00', '#fff', function () {
+                        rejectReferralWithdrawRequest(String(request.id || ''));
+                    }));
+                    card.appendChild(actions);
+                } else {
+                    card.appendChild(createStyledElement('div', 'تمت معالجة هذا الطلب', 'text-align:center;color:#888;'));
+                }
+
+                container.appendChild(card);
+            });
         }
 
         async function approveReferralWithdrawRequest(requestId) {
@@ -2805,9 +2947,7 @@
                 const response = await fetch(`/referral-withdraw-requests/${requestId}/approve`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-admin-email': ADMIN_EMAIL,
-                        'x-admin-password': ADMIN_PASSWORD
+                        'Content-Type': 'application/json'
                     }
                 });
                 const data = await response.json().catch(() => ({}));
@@ -2835,9 +2975,7 @@
                 const response = await fetch(`/referral-withdraw-requests/${requestId}/reject`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-admin-email': ADMIN_EMAIL,
-                        'x-admin-password': ADMIN_PASSWORD
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ reason: String(reason).trim() })
                 });
@@ -2869,9 +3007,7 @@
                 const response = await fetch(`/payments/${paymentId}/approve`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-admin-email': ADMIN_EMAIL,
-                        'x-admin-password': ADMIN_PASSWORD
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ ticketCount })
                 });
@@ -2902,9 +3038,7 @@
                 const response = await fetch(`/payments/${paymentId}/reject`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-admin-email': ADMIN_EMAIL,
-                        'x-admin-password': ADMIN_PASSWORD
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ reason: String(reason).trim() })
                 });
@@ -2930,23 +3064,40 @@
                 } catch (e) { }
             }
 
-            let msg = `<div style='text-align:right;direction:rtl;'>`;
-            msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>الاسم:</b> ${user ? user.username : ''} <b>اسم العائلة:</b> ${user ? user.family : ''}</div>`;
-            msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>البريد الإلكتروني:</b> ${email}</div>`;
-            msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>عنوان/ID الجائزة:</b> <span style='color:#FFD700'>${user && user.prizeAddress ? user.prizeAddress : 'غير مضاف بعد'}</span></div>`;
             const ticketNumbers = getUserTicketNumbers(user);
-            if (ticketNumbers.length) {
-                msg += `<div style='font-size:1.1rem;margin-bottom:8px;'><b>الأرقام الممنوحة:</b> <span style='color:#FFD700;direction:ltr;display:inline-block;'>${ticketNumbers.join(' , ')}</span></div>`;
-            }
-            msg += `</div>`;
-            // نافذة منبثقة بسيطة
             const popup = document.createElement('div');
-            popup.innerHTML = `<div style='position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;'>
-                <div style='background:#222;padding:32px 24px;border-radius:18px;max-width:400px;width:90vw;box-shadow:0 8px 32px #000;color:#fff;position:relative;'>
-                    <span style='position:absolute;top:10px;left:18px;font-size:1.5rem;cursor:pointer;color:#FFD700;' onclick='this.parentNode.parentNode.remove()'>&times;</span>
-                    ${msg}
-                </div>
-            </div>`;
+            popup.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            const modal = createStyledElement('div', '', 'background:#222;padding:32px 24px;border-radius:18px;max-width:400px;width:90vw;box-shadow:0 8px 32px #000;color:#fff;position:relative;');
+            const closeButton = createStyledElement('span', '×', 'position:absolute;top:10px;left:18px;font-size:1.5rem;cursor:pointer;color:#FFD700;');
+            closeButton.onclick = function () {
+                popup.remove();
+            };
+            modal.appendChild(closeButton);
+
+            const content = createStyledElement('div', '', 'text-align:right;direction:rtl;');
+            const nameRow = createStyledElement('div', '', 'font-size:1.1rem;margin-bottom:8px;');
+            const nameLabel = document.createElement('b');
+            nameLabel.textContent = 'الاسم:';
+            nameRow.appendChild(nameLabel);
+            nameRow.appendChild(document.createTextNode(' ' + (user ? user.username : '') + ' '));
+            const familyLabel = document.createElement('b');
+            familyLabel.textContent = 'اسم العائلة:';
+            nameRow.appendChild(familyLabel);
+            nameRow.appendChild(document.createTextNode(' ' + (user ? (user.family || '') : '')));
+            content.appendChild(nameRow);
+            content.appendChild(createInfoRow('البريد الإلكتروني', email, { rowStyle: 'font-size:1.1rem;margin-bottom:8px;' }));
+            content.appendChild(createInfoRow('عنوان/ID الجائزة', user && user.prizeAddress ? user.prizeAddress : 'غير مضاف بعد', {
+                rowStyle: 'font-size:1.1rem;margin-bottom:8px;',
+                valueStyle: 'color:#FFD700;'
+            }));
+            if (ticketNumbers.length) {
+                content.appendChild(createInfoRow('الأرقام الممنوحة', ticketNumbers.join(' , '), {
+                    rowStyle: 'font-size:1.1rem;margin-bottom:8px;',
+                    valueStyle: 'color:#FFD700;direction:ltr;display:inline-block;'
+                }));
+            }
+            modal.appendChild(content);
+            popup.appendChild(modal);
             document.body.appendChild(popup);
         }
 
@@ -2969,12 +3120,6 @@
             event.preventDefault();
             const email = document.getElementById('login-email').value.trim().toLowerCase();
             const password = document.getElementById('login-password').value;
-            // تحقق إذا كان الدخول للمطور
-            if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-                closeModal('loginModal');
-                showAdminPage();
-                return;
-            }
 
             try {
                 const res = await fetch('/login', {
@@ -3118,12 +3263,17 @@
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('ticketsScreen').style.display = 'flex';
             let ticketsList = document.getElementById('ticketsList');
+            clearNode(ticketsList);
             if (!ticketNumbers.length) {
-                ticketsList.innerHTML = '<span style="color:#fff">لا يوجد لديك رقم مشاركة مضاف حتى الآن.</span>';
+                ticketsList.appendChild(createStyledElement('span', 'لا يوجد لديك رقم مشاركة مضاف حتى الآن.', 'color:#fff;'));
             } else {
-                ticketsList.innerHTML = ticketNumbers.map(function (number) {
-                    return '<div style="background:#222; color:#FFD700; border-radius:12px; padding:10px 18px; margin-bottom:6px; width:90%; max-width:340px; font-size:1.1rem; direction:ltr; text-align:center; letter-spacing:2px; margin-left:auto; margin-right:auto;">' + number + '</div>';
-                }).join('');
+                ticketNumbers.forEach(function (number) {
+                    ticketsList.appendChild(createStyledElement(
+                        'div',
+                        number,
+                        'background:#222;color:#FFD700;border-radius:12px;padding:10px 18px;margin-bottom:6px;width:90%;max-width:340px;font-size:1.1rem;direction:ltr;text-align:center;letter-spacing:2px;margin-left:auto;margin-right:auto;'
+                    ));
+                });
             }
         }
 
