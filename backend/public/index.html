@@ -314,6 +314,199 @@
             box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
         }
 
+        #mainApp {
+            padding: 40px 16px 28px;
+        }
+
+        #mainApp .user-top-row {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            gap: 24px;
+            max-width: 1180px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        #mainApp .user-top-main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #mainApp .user-welcome-header {
+            transform: none;
+            max-width: 640px;
+            width: 100%;
+            padding: 34px 24px;
+            margin-bottom: 0;
+        }
+
+        #mainApp .user-welcome-header h2 {
+            font-size: 1.95rem;
+            line-height: 1.25;
+            margin-bottom: 12px;
+        }
+
+        #mainApp .user-welcome-header .slogan {
+            font-size: 1.08rem;
+            line-height: 1.8;
+            margin-bottom: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        #mainApp .ticket-info {
+            font-size: 1rem;
+            line-height: 1.7;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+
+        #mainApp .user-news-box {
+            min-width: 250px !important;
+            max-width: 320px !important;
+            width: 100% !important;
+            padding: 20px 16px !important;
+            border-radius: 18px !important;
+            align-self: stretch;
+            font-size: 1rem !important;
+        }
+
+        #mainApp .user-news-box #newsContent {
+            font-size: 1.3rem;
+            line-height: 1.55;
+            width: 100%;
+            overflow-wrap: anywhere;
+        }
+
+        #mainApp .user-app-content {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            max-width: 1100px;
+            margin: 32px auto 0 auto;
+        }
+
+        #mainApp .user-app-content .app-card {
+            padding: 28px 22px;
+        }
+
+        #mainApp .user-app-content .app-card h3 {
+            font-size: 1.45rem;
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+
+        #mainApp .user-app-content .app-card p {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 22px;
+        }
+
+        #mainApp .user-footer-links {
+            text-align: center;
+            margin: 28px auto 0 auto;
+            line-height: 1.9;
+            width: 100%;
+            padding: 0 12px;
+        }
+
+        @media (max-width: 900px) {
+            #mainApp .user-top-row {
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+            }
+
+            #mainApp .user-welcome-header {
+                max-width: 100%;
+            }
+
+            #mainApp .user-news-box {
+                max-width: 640px !important;
+                min-width: 0 !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #mainApp {
+                padding: 24px 14px 22px;
+            }
+
+            #mainApp .user-welcome-header {
+                padding: 26px 18px;
+                border-radius: 24px;
+            }
+
+            #mainApp .user-welcome-header h2 {
+                font-size: 1.6rem;
+            }
+
+            #mainApp .user-welcome-header .slogan {
+                font-size: 0.95rem;
+                line-height: 1.75;
+            }
+
+            #mainApp .user-news-box {
+                padding: 18px 14px !important;
+            }
+
+            #mainApp .user-news-box #newsContent {
+                font-size: 1.15rem;
+            }
+
+            #mainApp .user-app-content {
+                grid-template-columns: 1fr;
+                gap: 18px;
+                margin-top: 24px;
+            }
+
+            #mainApp .user-app-content .app-card {
+                padding: 24px 18px;
+                border-radius: 20px;
+            }
+
+            #mainApp .user-app-content .app-card h3 {
+                font-size: 1.3rem;
+            }
+
+            #mainApp .user-app-content .app-card p {
+                font-size: 0.92rem;
+                margin-bottom: 18px;
+            }
+
+            #mainApp .user-app-content .app-btn,
+            #mainApp .tutorial-open-btn {
+                width: 100%;
+                max-width: 260px;
+                font-size: 0.95rem;
+                letter-spacing: 0.5px;
+                padding: 14px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #mainApp .user-welcome-header h2 {
+                font-size: 1.4rem;
+            }
+
+            #mainApp .user-welcome-header .slogan {
+                font-size: 0.88rem;
+            }
+
+            #mainApp .ticket-info {
+                font-size: 0.92rem;
+                padding: 12px 14px;
+            }
+
+            #mainApp .user-news-box #newsContent {
+                font-size: 1.05rem;
+            }
+
+            #mainApp .user-footer-links {
+                font-size: 0.92rem;
+            }
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -764,9 +957,9 @@
 
     <!-- Main App -->
     <div id="mainApp" class="main-app">
-        <div style="display: flex; flex-direction: row; align-items: stretch; justify-content: center; gap: 24px;">
-            <div style="flex: 1; min-width: 0;">
-                <div class="app-header" style="transform:scale(1.18);min-width:0;">
+        <div class="user-top-row">
+            <div class="user-top-main">
+                <div class="app-header user-welcome-header">
                     <h2>مرحباً بك في مسابقة العمر</h2>
                     <div class="slogan">اشترك بوحد USDT وادخل السحب على العديد من الجوائز المالية<br>والجائزة الكبرى مليون دولار<br>كلما اشتركت بأعداد أكثر كلما زادت فرصتك للربح</div>
                     <div id="ticketInfo" class="ticket-info" style="display:none"></div>
@@ -775,13 +968,13 @@
                     <button type="button" class="app-btn tutorial-open-btn" onclick="openTutorialModal(true)">التعليمات</button>
                 </div>
             </div>
-            <div id="newsBox"
+            <div id="newsBox" class="user-news-box"
                 style="background: linear-gradient(135deg, #232526 0%, #FFD700 100%); color: #222; border-radius: 18px; min-width: 220px; max-width: 30%; width: 30%; padding: 22px 18px; box-shadow: 0 6px 24px rgba(0,0,0,0.10); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; font-size:2.5rem;">
                 <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: #d19a00;">الأخبار</div>
                 <div id="newsContent">لا توجد أخبار حالياً.</div>
             </div>
         </div>
-        <div class="app-content">
+        <div class="app-content user-app-content">
             <div class="app-card">
                 <h3>شراء الأرقام والمشاركة في السحب</h3>
                 <p>اشتري الأرقام وادخل على السحب واحصل على فرصة الفوز</p>
@@ -817,7 +1010,7 @@
                 </div>
             </div>
         </div>
-        <div style="text-align:center; margin:32px auto 0 auto; line-height:1.9;">
+        <div class="user-footer-links">
             <div style="color:#FFD700; font-size:0.95rem; font-weight:500;">تواصل معنا</div>
             <a href="mailto:agecompetition@gmail.com"
                 style="color:#fff; text-decoration:none; font-size:0.95rem;">agecompetition@gmail.com</a>
