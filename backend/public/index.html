@@ -1070,6 +1070,16 @@
                 <button type="button" class="app-btn" onclick="showTicketsScreen()">عرض الأرقام</button>
             </div>
             <div class="app-card">
+                <h3>رصيد الجائزة</h3>
+                <p>شاهد رصيد الجائزة الخاص بك واطلب سحبه عند توفره</p>
+                <div style="width:100%; text-align:right; margin-top:18px;">
+                    <div style="color:#FFD700; font-weight:bold; margin-bottom:8px;">الرصيد الحالي بالجائزة</div>
+                    <div id="prizeBalanceValue" style="background:#111; color:#FFD700; border:1px solid rgba(255,215,0,0.25); border-radius:12px; padding:12px 14px; text-align:center;">0 USDT</div>
+                    <div id="prizeWithdrawStatusMsg" style="margin-top:10px; display:none;"></div>
+                    <button id="requestPrizeWithdrawBtn" type="button" class="app-btn" style="margin-top:12px;" onclick="requestPrizeWithdraw()">طلب سحب رصيد الجائزة</button>
+                </div>
+            </div>
+            <div class="app-card">
                 <h3>الإحالة</h3>
                 <p>انسخ رمز الإحالة الخاص بك أو أدخل رمز الشخص الذي دعاك</p>
                 <div style="width:100%; text-align:right; margin-top:14px;">
@@ -1803,6 +1813,26 @@
                 style="background:#c00;color:#fff;margin-top:16px;display:none;" onclick="deleteWinner()">حذف رسالة
                 الفائز</button>
         </div>
+        <div
+            style="margin: 40px auto 0; max-width: 500px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
+            <h3 style="color:#FFD700; margin-bottom:18px;">إضافة رصيد جائزة لمستخدم</h3>
+            <form id="prizeBalanceForm" onsubmit="submitPrizeBalance(event)">
+                <div class="form-group">
+                    <label for="prize-balance-username">اسم المستخدم</label>
+                    <input type="text" id="prize-balance-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="prize-balance-family">اسم العائلة / اللقب</label>
+                    <input type="text" id="prize-balance-family" name="family" required>
+                </div>
+                <div class="form-group">
+                    <label for="prize-balance-amount">المبلغ المراد إضافته (USDT)</label>
+                    <input type="number" id="prize-balance-amount" name="amount" required min="0.01" step="0.01">
+                </div>
+                <button type="submit" class="submit-btn">إرسال الرصيد</button>
+                <div id="prizeBalanceStatus" style="margin-top:12px;font-size:1rem;"></div>
+            </form>
+        </div>
         // تصدير جميع الأرقام الممنوحة مع بيانات أصحابها إلى ملف CSV
         function exportAllTicketsCSV() {
         const users = participantsCache;
@@ -1886,6 +1916,14 @@
                 <div id="adminReferralWithdrawRequestsTable"
                     style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
                     <div style="color:#fff;text-align:center;">جاري تحميل طلبات سحب أرباح الإحالة...</div>
+                </div>
+            </div>
+            <div
+                style="margin: 40px auto 0; max-width: 1100px; background: #232526; border-radius: 18px; padding: 30px 24px; box-shadow: 0 6px 24px rgba(255,215,0,0.10); color: #fff;">
+                <h3 style="color:#FFD700; margin-bottom:18px; text-align:center;">طلبات سحب رصيد الجائزة</h3>
+                <div id="adminPrizeWithdrawRequestsTable"
+                    style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                    <div style="color:#fff;text-align:center;">جاري تحميل طلبات سحب رصيد الجائزة...</div>
                 </div>
             </div>
             <!-- جدول بيانات المستخدمين في الأسفل -->
@@ -2031,6 +2069,16 @@
             <div id="winnerPopupAmount" style="font-size:1.3rem;font-weight:700;color:#B8860B;margin-bottom:18px;">
             </div>
             <div style="font-size:1.1rem;color:#fff;opacity:0.8;">نتمنى لك حظاً سعيداً في السحوبات القادمة!</div>
+        </div>
+    </div>
+    <div id="prizeAwardPopup"
+        style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:100000;background:rgba(0,0,0,0.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
+        <div
+            style="background:linear-gradient(145deg,#2a1a00,#111);border:1px solid rgba(255,215,0,0.28);border-radius:24px;max-width:520px;width:100%;padding:30px 24px;box-shadow:0 14px 40px rgba(0,0,0,0.38);text-align:center;color:#fff;">
+            <div style="font-size:2rem;margin-bottom:12px;">🎁</div>
+            <div style="color:#FFD700;font-size:1.45rem;font-weight:700;margin-bottom:12px;">جائزة خاصة</div>
+            <div id="prizeAwardPopupText" style="font-size:1.08rem;line-height:1.9;margin-bottom:22px;"></div>
+            <button id="prizeAwardPopupConfirmBtn" type="button" class="app-btn" style="min-width:160px;">موافق</button>
         </div>
     </div>
     <style>
@@ -2371,6 +2419,7 @@
         let participantsCache = [];
         let paymentsCache = [];
         let referralWithdrawRequestsCache = [];
+        let prizeWithdrawRequestsCache = [];
         let adminAutoRefreshTimer = null;
 
         async function fetchParticipants() {
@@ -2417,6 +2466,22 @@
             const requests = await response.json();
             referralWithdrawRequestsCache = Array.isArray(requests) ? requests : [];
             return referralWithdrawRequestsCache;
+        }
+
+        async function fetchPrizeWithdrawRequests() {
+            if (!isAdminSession) {
+                throw new Error('غير مصرح');
+            }
+
+            const response = await fetch('/prize-withdraw-requests');
+            const requests = await response.json().catch(() => []);
+            if (!response.ok) {
+                const errorData = requests && typeof requests === 'object' ? requests : {};
+                throw new Error(errorData.message || 'فشل جلب طلبات سحب رصيد الجائزة');
+            }
+
+            prizeWithdrawRequestsCache = Array.isArray(requests) ? requests : [];
+            return prizeWithdrawRequestsCache;
         }
 
         function getParticipantByEmail(email) {
@@ -2519,6 +2584,23 @@
             }
         }
 
+        function updatePrizeBalanceSection() {
+            const prizeBalanceBox = document.getElementById('prizeBalanceValue');
+            const prizeWithdrawStatusMsg = document.getElementById('prizeWithdrawStatusMsg');
+            const prizeWithdrawBtn = document.getElementById('requestPrizeWithdrawBtn');
+            if (!prizeBalanceBox || !prizeWithdrawStatusMsg || !prizeWithdrawBtn) {
+                return;
+            }
+
+            const prizeBalance = currentUser ? Number(currentUser.prizeBalance || 0) : 0;
+            prizeBalanceBox.textContent = prizeBalance.toFixed(2) + ' USDT';
+            prizeWithdrawStatusMsg.textContent = '';
+            prizeWithdrawStatusMsg.style.display = 'none';
+            prizeWithdrawBtn.disabled = false;
+            prizeWithdrawBtn.style.opacity = '1';
+            prizeWithdrawBtn.style.cursor = 'pointer';
+        }
+
         async function requestReferralWithdraw() {
             if (!currentUser || !currentUser.email) {
                 alert('سجل الدخول أولاً');
@@ -2574,6 +2656,64 @@
                 withdrawBtn.style.cursor = 'pointer';
                 withdrawStatusMsg.style.display = 'none';
                 alert('حدث خطأ أثناء إرسال طلب سحب أرباح الإحالة');
+            }
+        }
+
+        async function requestPrizeWithdraw() {
+            if (!currentUser || !currentUser.email) {
+                alert('سجل الدخول أولًا');
+                return;
+            }
+
+            currentUser = await refreshCurrentUserData() || currentUser;
+            window.currentUser = currentUser;
+
+            const withdrawBtn = document.getElementById('requestPrizeWithdrawBtn');
+            const withdrawStatusMsg = document.getElementById('prizeWithdrawStatusMsg');
+            const prizeBalance = Number(currentUser.prizeBalance || 0);
+            const prizeAddress = String(currentUser.prizeAddress || '').trim();
+
+            if (!(prizeBalance > 0)) {
+                alert('لا يمكن إرسال طلب سحب لأن رصيد الجائزة يساوي صفر');
+                return;
+            }
+            if (!prizeAddress) {
+                alert('يجب عليك أولًا إدخال عنوان الاستلام قبل إرسال طلب السحب');
+                return;
+            }
+
+            try {
+                withdrawBtn.disabled = true;
+                withdrawBtn.style.opacity = '0.7';
+                withdrawBtn.style.cursor = 'not-allowed';
+                withdrawStatusMsg.style.display = 'block';
+                withdrawStatusMsg.style.color = '#FFD700';
+                withdrawStatusMsg.textContent = 'جاري إرسال طلب سحب رصيد الجائزة...';
+
+                const response = await fetch('/prize-withdraw-requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    withdrawBtn.disabled = false;
+                    withdrawBtn.style.opacity = '1';
+                    withdrawBtn.style.cursor = 'pointer';
+                    withdrawStatusMsg.style.display = 'none';
+                    alert(data.message || 'فشل إرسال طلب سحب رصيد الجائزة');
+                    return;
+                }
+
+                withdrawStatusMsg.style.display = 'block';
+                withdrawStatusMsg.style.color = '#0c0';
+                withdrawStatusMsg.textContent = 'تم إرسال طلب سحب رصيد الجائزة بنجاح وهو الآن قيد المراجعة';
+            } catch (e) {
+                withdrawBtn.disabled = false;
+                withdrawBtn.style.opacity = '1';
+                withdrawBtn.style.cursor = 'pointer';
+                withdrawStatusMsg.style.display = 'none';
+                alert('حدث خطأ أثناء إرسال طلب سحب رصيد الجائزة');
             }
         }
 
@@ -2703,7 +2843,7 @@
             const seenMap = getSeenUserMessageMap();
             const seenIds = Array.isArray(seenMap[emailKey]) ? seenMap[emailKey] : [];
             const unseenMessages = messages.filter(function (message) {
-                return message && message.id && !seenIds.includes(message.id);
+                return message && message.id && !seenIds.includes(message.id) && message.type !== 'prize-balance-award';
             });
 
             if (!unseenMessages.length) {
@@ -2719,6 +2859,38 @@
             alert(latestMessage.text || '');
         }
 
+        function showPrizeAwardPopup(email, messages) {
+            if (!email || !Array.isArray(messages) || !messages.length) {
+                return;
+            }
+
+            const emailKey = String(email).toLowerCase();
+            const seenMap = getSeenUserMessageMap();
+            const seenIds = Array.isArray(seenMap[emailKey]) ? seenMap[emailKey] : [];
+            const unseenPrizeMessages = messages.filter(function (message) {
+                return message && message.id && !seenIds.includes(message.id) && message.type === 'prize-balance-award';
+            });
+
+            if (!unseenPrizeMessages.length) {
+                return;
+            }
+
+            const latestPrizeMessage = unseenPrizeMessages[unseenPrizeMessages.length - 1];
+            const popup = document.getElementById('prizeAwardPopup');
+            const popupText = document.getElementById('prizeAwardPopupText');
+            const confirmBtn = document.getElementById('prizeAwardPopupConfirmBtn');
+            if (!popup || !popupText || !confirmBtn) {
+                return;
+            }
+
+            popupText.textContent = latestPrizeMessage.text || '';
+            popup.style.display = 'flex';
+            confirmBtn.onclick = function () {
+                markUserMessageAsSeen(emailKey, latestPrizeMessage.id);
+                popup.style.display = 'none';
+            };
+        }
+
         function startAdminAutoRefresh() {
             if (adminAutoRefreshTimer) {
                 clearInterval(adminAutoRefreshTimer);
@@ -2730,6 +2902,7 @@
                 renderAdminUsers();
                 renderPaymentRequests();
                 renderReferralWithdrawRequests();
+                renderPrizeWithdrawRequests();
             }, 5000);
         }
 
@@ -2766,6 +2939,7 @@
                     referredByCode: data.referredByCode || '',
                     referredByUserId: data.referredByUserId || '',
                     referralBalance: Number(data.referralBalance || 0),
+                    prizeBalance: Number(data.prizeBalance || 0),
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
@@ -2779,8 +2953,10 @@
                     welcomeMessagesBox.style.display = 'none';
                     clearNode(welcomeMessagesBox);
                 }
+                updatePrizeBalanceSection();
                 renderUserMessages(updatedUser.messages, 'ticketsMessagesBox');
                 showNewUserMessagePopup(updatedUser.email, updatedUser.messages);
+                showPrizeAwardPopup(updatedUser.email, updatedUser.messages);
                 openTutorialModal(false);
                 return updatedUser;
             } catch (e) {
@@ -2796,6 +2972,7 @@
             renderAdminUsers();
             renderPaymentRequests();
             renderReferralWithdrawRequests();
+            renderPrizeWithdrawRequests();
             startAdminAutoRefresh();
             fetchNews(); // عند دخول المطور، جلب الأخبار أيضاً
         }
@@ -3041,6 +3218,156 @@
             });
         }
 
+        async function renderPrizeWithdrawRequests() {
+            const container = document.getElementById('adminPrizeWithdrawRequestsTable');
+            if (!container) return;
+
+            let requests = [];
+            try {
+                requests = await fetchPrizeWithdrawRequests();
+            } catch (e) {
+                setCenteredMessage(container, 'تعذر تحميل طلبات سحب رصيد الجائزة.', '#fff');
+                return;
+            }
+
+            if (!requests.length) {
+                setCenteredMessage(container, 'لا توجد طلبات سحب رصيد جائزة حالياً.', '#fff');
+                return;
+            }
+
+            clearNode(container);
+            requests.forEach(function (request) {
+                const statusText = request.status === 'pending'
+                    ? 'قيد الانتظار'
+                    : request.status === 'approved'
+                        ? 'مقبول'
+                        : request.status === 'rejected'
+                            ? 'مرفوض'
+                            : request.status;
+                const card = createStyledElement('div', '', 'background:#181818;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,0.18);text-align:right;');
+                card.appendChild(createStyledElement('div', request.username || '', 'color:#FFD700;font-size:1.15rem;font-weight:bold;margin-bottom:12px;'));
+                card.appendChild(createInfoRow('العائلة', request.family || ''));
+                card.appendChild(createInfoRow('الإيميل', request.email || ''));
+                card.appendChild(createInfoRow('رصيد الجائزة', Number(request.prizeBalance || 0).toFixed(2) + ' USDT'));
+                card.appendChild(createInfoRow('المبلغ المطلوب', Number(request.requestedAmount || 0).toFixed(2) + ' USDT'));
+                card.appendChild(createInfoRow('عنوان الاستلام', request.prizeAddress || '', {
+                    valueStyle: 'color:#FFD700;direction:ltr;text-align:left;display:inline-block;overflow-wrap:anywhere;'
+                }));
+                card.appendChild(createInfoRow('الحالة', statusText, {
+                    valueStyle: 'color:#FFD700;'
+                }));
+                if (request.status === 'rejected' && request.rejectionReason) {
+                    card.appendChild(createInfoRow('سبب الرفض', request.rejectionReason));
+                }
+                card.appendChild(createInfoRow('التاريخ', request.createdAt ? new Date(request.createdAt).toLocaleString('ar-EG') : '', {
+                    rowStyle: 'margin-bottom:14px;'
+                }));
+
+                if (request.status === 'pending') {
+                    const actions = createStyledElement('div', '', 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;');
+                    actions.appendChild(createAdminActionButton('✔ قبول', '', '', function () {
+                        approvePrizeWithdrawRequest(String(request.id || ''));
+                    }));
+                    actions.appendChild(createAdminActionButton('❌ رفض', '#c00', '#fff', function () {
+                        rejectPrizeWithdrawRequest(String(request.id || ''));
+                    }));
+                    card.appendChild(actions);
+                } else {
+                    card.appendChild(createStyledElement('div', 'تمت معالجة هذا الطلب', 'text-align:center;color:#888;'));
+                }
+
+                container.appendChild(card);
+            });
+        }
+
+        async function submitPrizeBalance(event) {
+            event.preventDefault();
+            const username = document.getElementById('prize-balance-username').value.trim();
+            const family = document.getElementById('prize-balance-family').value.trim();
+            const amountValue = document.getElementById('prize-balance-amount').value.trim();
+            const amount = Number(amountValue);
+            const statusDiv = document.getElementById('prizeBalanceStatus');
+            statusDiv.textContent = '';
+
+            if (!username || !family || !Number.isFinite(amount) || amount <= 0) {
+                statusDiv.style.color = '#f66';
+                statusDiv.textContent = 'يرجى تعبئة جميع الحقول بشكل صحيح.';
+                return;
+            }
+
+            try {
+                const res = await fetch('/admin/prize-balance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, family, amount })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    statusDiv.style.color = '#f66';
+                    statusDiv.textContent = data.message || 'فشل إضافة رصيد الجائزة.';
+                    return;
+                }
+
+                document.getElementById('prizeBalanceForm').reset();
+                statusDiv.style.color = '#0c0';
+                statusDiv.textContent = 'تمت إضافة رصيد الجائزة بنجاح!';
+                await renderAdminUsers();
+            } catch (e) {
+                statusDiv.style.color = '#f66';
+                statusDiv.textContent = 'حدث خطأ أثناء إضافة رصيد الجائزة.';
+            }
+        }
+
+        async function approvePrizeWithdrawRequest(requestId) {
+            try {
+                const response = await fetch(`/prize-withdraw-requests/${requestId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    alert(data.message || 'فشل قبول طلب سحب رصيد الجائزة');
+                    return;
+                }
+
+                await renderPrizeWithdrawRequests();
+                alert('تمت الموافقة على طلب سحب رصيد الجائزة بنجاح');
+            } catch (e) {
+                alert('حدث خطأ أثناء قبول طلب سحب رصيد الجائزة');
+            }
+        }
+
+        async function rejectPrizeWithdrawRequest(requestId) {
+            const reason = prompt('اكتب سبب الرفض');
+            if (reason === null) return;
+            if (!String(reason).trim()) {
+                alert('يرجى كتابة سبب الرفض');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/prize-withdraw-requests/${requestId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: String(reason).trim() })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    alert(data.message || 'فشل رفض طلب سحب رصيد الجائزة');
+                    return;
+                }
+
+                await renderPrizeWithdrawRequests();
+                alert('تم رفض طلب سحب رصيد الجائزة بنجاح');
+            } catch (e) {
+                alert('حدث خطأ أثناء رفض طلب سحب رصيد الجائزة');
+            }
+        }
+
         async function approveReferralWithdrawRequest(requestId) {
             try {
                 const response = await fetch(`/referral-withdraw-requests/${requestId}/approve`, {
@@ -3243,6 +3570,7 @@
                     referredByCode: data.referredByCode || '',
                     referredByUserId: data.referredByUserId || '',
                     referralBalance: Number(data.referralBalance || 0),
+                    prizeBalance: Number(data.prizeBalance || 0),
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
@@ -3309,6 +3637,7 @@
                     referredByCode: data.referredByCode || '',
                     referredByUserId: data.referredByUserId || '',
                     referralBalance: Number(data.referralBalance || 0),
+                    prizeBalance: Number(data.prizeBalance || 0),
                     registrationNumber: data.registrationNumber || null,
                     ticketNumbers: Array.isArray(data.ticketNumbers) ? data.ticketNumbers : [],
                     prizeAddress: data.prizeAddress || '',
@@ -3345,6 +3674,7 @@
                 userNameInfo.style.display = 'block';
             }
             await refreshCurrentUserData();
+            updatePrizeBalanceSection();
             updateReferralSection();
             openTutorialModal(false);
         }

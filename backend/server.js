@@ -125,6 +125,11 @@ async function ensureReferralWithdrawIndexes() {
     await referralWithdrawRequestsCollection.createIndex({ email: 1, status: 1 }, { name: 'referral_withdraw_email_status' });
 }
 
+async function ensurePrizeWithdrawIndexes() {
+    await prizeWithdrawRequestsCollection.createIndex({ createdAt: -1 }, { name: 'prize_withdraw_createdAt_desc' });
+    await prizeWithdrawRequestsCollection.createIndex({ email: 1, status: 1 }, { name: 'prize_withdraw_email_status' });
+}
+
 async function migrateLegacyPaymentProofs() {
     const cursor = paymentsCollection.find(
         {
@@ -263,7 +268,7 @@ async function cleanupExpiredPaymentProofs() {
 // ربط MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'mosabaqat_alomr';
-let db, newsCollection, participantsCollection, winnerCollection, paymentsCollection, referralWithdrawRequestsCollection;
+let db, newsCollection, participantsCollection, winnerCollection, paymentsCollection, referralWithdrawRequestsCollection, prizeWithdrawRequestsCollection;
 
 async function connectDB() {
     try {
@@ -279,10 +284,12 @@ async function connectDB() {
         winnerCollection = db.collection('winner');
         paymentsCollection = db.collection('payments');
         referralWithdrawRequestsCollection = db.collection('referralWithdrawRequests');
+        prizeWithdrawRequestsCollection = db.collection('prizeWithdrawRequests');
         await ensureParticipantsIndexes();
         await backfillParticipantReferralFields();
         await ensurePaymentsIndexes();
         await ensureReferralWithdrawIndexes();
+        await ensurePrizeWithdrawIndexes();
         await migrateLegacyPaymentProofs();
         await cleanupExpiredPaymentProofs();
 
@@ -293,7 +300,8 @@ async function connectDB() {
             participants: !!participantsCollection,
             winner: !!winnerCollection,
             payments: !!paymentsCollection,
-            referralWithdrawRequests: !!referralWithdrawRequestsCollection
+            referralWithdrawRequests: !!referralWithdrawRequestsCollection,
+            prizeWithdrawRequests: !!prizeWithdrawRequestsCollection
         });
 
         return true;
@@ -501,6 +509,7 @@ async function backfillParticipantReferralFields() {
         {
             $or: [
                 { referralBalance: { $exists: false } },
+                { prizeBalance: { $exists: false } },
                 { referredBy: { $exists: false } },
                 { referredBy: null }
             ]
@@ -509,6 +518,7 @@ async function backfillParticipantReferralFields() {
             {
                 $set: {
                     referralBalance: { $ifNull: ['$referralBalance', 0] },
+                    prizeBalance: { $ifNull: ['$prizeBalance', 0] },
                     referredBy: {
                         $cond: [
                             {
@@ -552,6 +562,7 @@ function buildParticipantResponse(participant) {
         referredByCode: participant.referredByCode || '',
         referredByUserId: participant.referredByUserId ? String(participant.referredByUserId) : '',
         referralBalance: Number(participant.referralBalance || 0),
+        prizeBalance: Number(participant.prizeBalance || 0),
         registrationNumber: ticketNumbers[0] || null,
         ticketNumbers,
         prizeAddress: participant.prizeAddress || '',
@@ -697,6 +708,53 @@ app.delete('/winner', requireAdmin, async (req, res) => {
 });
 
 // نقطة إرجاع جميع المشاركين (للمطور)
+app.post('/admin/prize-balance', requireAdmin, async (req, res) => {
+    try {
+        const username = String(req.body?.username || '').trim();
+        const family = String(req.body?.family || '').trim();
+        const amount = Number(req.body?.amount);
+
+        if (!username || !family || !Number.isFinite(amount) || amount <= 0) {
+            return res.status(400).json({ message: 'يرجى إدخال الاسم واللقب والمبلغ بشكل صحيح' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            username: { $regex: new RegExp(`^${username}$`, 'i') },
+            family: { $regex: new RegExp(`^${family}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+
+        const normalizedAmount = Number(amount.toFixed(2));
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            {
+                $inc: { prizeBalance: normalizedAmount },
+                $push: {
+                    messages: {
+                        id: new ObjectId().toString(),
+                        type: 'prize-balance-award',
+                        text: `مبروك، حصلت على جائزة بقيمة ${normalizedAmount} USDT، وتمت إضافتها إلى رصيد الجائزة الخاص بك.`,
+                        createdAt: new Date()
+                    }
+                }
+            }
+        );
+
+        res.json({
+            message: 'تمت إضافة رصيد الجائزة بنجاح',
+            username: participant.username,
+            family: participant.family || '',
+            amount: normalizedAmount
+        });
+    } catch (err) {
+        console.error('❌ Prize balance award error:', err);
+        res.status(500).json({ message: 'فشل إضافة رصيد الجائزة' });
+    }
+});
+
 app.get('/participants', requireAdmin, async (req, res) => {
     try {
         console.log('👥 Fetching participants...');
@@ -1019,6 +1077,7 @@ app.post('/login', async (req, res) => {
                 referredByCode: '',
                 referredByUserId: '',
                 referralBalance: 0,
+                prizeBalance: 0,
                 registrationNumber: null,
                 ticketNumbers: [],
                 prizeAddress: '',
@@ -1064,6 +1123,7 @@ app.post('/login', async (req, res) => {
             referredByCode: user.referredByCode || '',
             referredByUserId: user.referredByUserId ? String(user.referredByUserId) : '',
             referralBalance: Number(user.referralBalance || 0),
+            prizeBalance: Number(user.prizeBalance || 0),
             registrationNumber: getParticipantNumbers(user)[0] || null,
             ticketNumbers: getParticipantNumbers(user),
             prizeAddress: user.prizeAddress || '',
@@ -1139,6 +1199,7 @@ app.post('/register', async (req, res) => {
             referredByCode: '',
             referredByUserId: null,
             referralBalance: 0,
+            prizeBalance: 0,
             prizeAddress: '',
             tutorialSeen: false,
             termsAccepted: true,
@@ -1169,6 +1230,7 @@ app.post('/register', async (req, res) => {
             referredByCode: '',
             referredByUserId: '',
             referralBalance: 0,
+            prizeBalance: 0,
             registrationNumber: null,
             ticketNumbers: [],
             prizeAddress: '',
@@ -1502,6 +1564,222 @@ app.post('/referral-withdraw-requests/:id/reject', requireAdmin, async (req, res
 });
 
 // حفظ طلب دفع يدوي جديد
+app.post('/prize-withdraw-requests', requireUser, async (req, res) => {
+    try {
+        const participant = await participantsCollection.findOne({ _id: req.currentUser._id });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم غير موجود' });
+        }
+
+        const prizeBalance = Number(participant.prizeBalance || 0);
+        if (!(prizeBalance > 0)) {
+            return res.status(400).json({ message: 'لا يمكن إرسال طلب سحب لأن رصيد الجائزة يساوي صفر' });
+        }
+
+        const prizeAddress = String(participant.prizeAddress || '').trim();
+        if (!prizeAddress) {
+            return res.status(400).json({ message: 'يجب عليك أولًا إدخال عنوان الاستلام قبل إرسال طلب السحب' });
+        }
+
+        const existingPendingRequest = await prizeWithdrawRequestsCollection.findOne({
+            email: participant.email.toLowerCase(),
+            status: 'pending'
+        });
+
+        if (existingPendingRequest) {
+            return res.status(400).json({ message: 'لديك طلب سحب رصيد جائزة قيد المراجعة بالفعل' });
+        }
+
+        const withdrawRequest = {
+            username: participant.username,
+            family: participant.family || '',
+            email: participant.email.toLowerCase(),
+            prizeBalance,
+            requestedAmount: prizeBalance,
+            prizeAddress,
+            status: 'pending',
+            createdAt: new Date(),
+            participantId: participant._id
+        };
+
+        const result = await prizeWithdrawRequestsCollection.insertOne(withdrawRequest);
+        res.status(201).json({
+            message: 'تم إرسال طلب سحب رصيد الجائزة بنجاح وهو الآن قيد المراجعة',
+            id: String(result.insertedId),
+            status: withdrawRequest.status,
+            requestedAmount: withdrawRequest.requestedAmount
+        });
+    } catch (err) {
+        console.error('❌ Prize withdraw request error:', err);
+        res.status(500).json({ message: 'فشل إرسال طلب سحب رصيد الجائزة' });
+    }
+});
+
+app.get('/prize-withdraw-requests', requireAdmin, async (req, res) => {
+    try {
+        const requests = await prizeWithdrawRequestsCollection.find(
+            {},
+            {
+                projection: {
+                    username: 1,
+                    family: 1,
+                    email: 1,
+                    prizeBalance: 1,
+                    requestedAmount: 1,
+                    prizeAddress: 1,
+                    status: 1,
+                    createdAt: 1,
+                    rejectionReason: 1
+                }
+            }
+        ).sort({ createdAt: -1 }).toArray();
+
+        res.json(requests.map(request => ({
+            id: String(request._id),
+            username: request.username || '',
+            family: request.family || '',
+            email: request.email || '',
+            prizeBalance: Number(request.prizeBalance || 0),
+            requestedAmount: Number(request.requestedAmount || 0),
+            prizeAddress: request.prizeAddress || '',
+            status: request.status || 'pending',
+            createdAt: request.createdAt,
+            rejectionReason: request.rejectionReason || ''
+        })));
+    } catch (err) {
+        console.error('❌ Prize withdraw requests fetch error:', err);
+        res.status(500).json({ message: 'فشل جلب طلبات سحب رصيد الجائزة' });
+    }
+});
+
+app.post('/prize-withdraw-requests/:id/approve', requireAdmin, async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'معرف طلب السحب غير صالح' });
+        }
+
+        const request = await prizeWithdrawRequestsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        if (!request) {
+            return res.status(404).json({ message: 'طلب سحب رصيد الجائزة غير موجود' });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({ message: 'تمت معالجة هذا الطلب مسبقًا' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${request.email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم المرتبط بالطلب غير موجود' });
+        }
+
+        const requestedAmount = Number(request.requestedAmount || 0);
+        if (!(requestedAmount > 0)) {
+            return res.status(400).json({ message: 'المبلغ المطلوب غير صالح' });
+        }
+
+        const participantUpdate = await participantsCollection.updateOne(
+            {
+                _id: participant._id,
+                prizeBalance: { $gte: requestedAmount }
+            },
+            {
+                $inc: { prizeBalance: -requestedAmount },
+                $push: {
+                    messages: {
+                        id: new ObjectId().toString(),
+                        type: 'prize-withdraw-approved',
+                        text: 'تمت الموافقة على طلب سحب رصيد الجائزة، وسيتم تحويل المبلغ إلى عنوان الاستلام الخاص بك.',
+                        createdAt: new Date()
+                    }
+                }
+            }
+        );
+
+        if (participantUpdate.modifiedCount === 0) {
+            return res.status(400).json({ message: 'رصيد الجائزة الحالي أقل من المبلغ المطلوب' });
+        }
+
+        await prizeWithdrawRequestsCollection.updateOne(
+            { _id: request._id },
+            {
+                $set: {
+                    status: 'approved',
+                    approvedAt: new Date()
+                }
+            }
+        );
+
+        res.json({ message: 'تمت الموافقة على طلب سحب رصيد الجائزة بنجاح' });
+    } catch (err) {
+        console.error('❌ Prize withdraw approve error:', err);
+        res.status(500).json({ message: 'فشل قبول طلب سحب رصيد الجائزة' });
+    }
+});
+
+app.post('/prize-withdraw-requests/:id/reject', requireAdmin, async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'معرف طلب السحب غير صالح' });
+        }
+
+        const reason = String(req.body?.reason || '').trim();
+        if (!reason) {
+            return res.status(400).json({ message: 'سبب الرفض مطلوب' });
+        }
+
+        const request = await prizeWithdrawRequestsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        if (!request) {
+            return res.status(404).json({ message: 'طلب سحب رصيد الجائزة غير موجود' });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({ message: 'تمت معالجة هذا الطلب مسبقًا' });
+        }
+
+        const participant = await participantsCollection.findOne({
+            email: { $regex: new RegExp(`^${request.email}$`, 'i') }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: 'المستخدم المرتبط بالطلب غير موجود' });
+        }
+
+        await prizeWithdrawRequestsCollection.updateOne(
+            { _id: request._id },
+            {
+                $set: {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectedAt: new Date()
+                }
+            }
+        );
+
+        await participantsCollection.updateOne(
+            { _id: participant._id },
+            {
+                $push: {
+                    messages: {
+                        id: new ObjectId().toString(),
+                        type: 'prize-withdraw-rejected',
+                        text: `تم رفض طلب سحب رصيد الجائزة. السبب: ${reason}`,
+                        createdAt: new Date()
+                    }
+                }
+            }
+        );
+
+        res.json({ message: 'تم رفض طلب سحب رصيد الجائزة بنجاح' });
+    } catch (err) {
+        console.error('❌ Prize withdraw reject error:', err);
+        res.status(500).json({ message: 'فشل رفض طلب سحب رصيد الجائزة' });
+    }
+});
+
 app.post('/submit-payment', requireUser, function (req, res) {
     paymentUpload.single('proofImage')(req, res, async function (uploadErr) {
         if (uploadErr) {
